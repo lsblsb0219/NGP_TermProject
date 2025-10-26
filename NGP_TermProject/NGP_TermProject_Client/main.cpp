@@ -6,9 +6,12 @@
 //#include <gl/glm/glm.hpp>
 //#include <gl/glm/ext.hpp>
 //#include <gl/glm/gtc/matrix_transform.hpp>
-#include <gl/glm/glm/glm.hpp>
-#include <gl/glm/glm/ext.hpp>
-#include <gl/glm/glm/gtc/matrix_transform.hpp>
+//#include <gl/glm/glm/glm.hpp>
+//#include <gl/glm/glm/ext.hpp>
+//#include <gl/glm/glm/gtc/matrix_transform.hpp>
+#include <glm.hpp>
+#include <ext.hpp>
+#include <gtc/matrix_transform.hpp>
 #include <Windows.h>
 #include <ctime>
 #include <random>
