@@ -10,6 +10,12 @@
 #include <ctime>
 #include <random>
 
+#include "..\Common.h"
+
+char* SERVERIP = (char*)"";
+#define SERVERPORT 9000
+#define BUFSIZE    512
+
 typedef struct Bounding_Box {
 	GLfloat x1, z1, x2, z2;
 }BB;
@@ -32,6 +38,14 @@ GLvoid Reshape(int w, int h);
 GLvoid TimerFunc(int x);
 GLvoid Bump(int index);
 
+DWORD WINAPI client_key_thread(LPVOID arg);
+
+bool interaction_player_status();
+void interaction_result();
+void interactin_key();
+int interaction_count();
+
+bool match_loading();
 int read_ten(int num);
 BB get_bb(Robot robot);
 bool collision(BB obj_a, BB obj_b);
@@ -252,6 +266,8 @@ GLuint fragmentShader;
 unsigned int texture_runmap[16];
 BITMAPINFO* bmp;
 
+SOCKET sock;
+
 int main(int argc, char** argv)
 {
 	background_width = 1200, background_height = 800;
@@ -270,6 +286,24 @@ int main(int argc, char** argv)
 	}
 	else
 		std::cout << "GLEW Initialized\n";
+
+	// 윈속 초기화
+	WSADATA wsa;
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+		return 1;
+
+	// 소켓 생성
+	sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (sock == INVALID_SOCKET) err_quit("socket()");
+	
+	// connect()
+	struct sockaddr_in serveraddr;
+	memset(&serveraddr, 0, sizeof(serveraddr));
+	serveraddr.sin_family = AF_INET;
+	inet_pton(AF_INET, SERVERIP, &serveraddr.sin_addr);
+	serveraddr.sin_port = htons(SERVERPORT);
+	int retval = connect(sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+	if (retval == SOCKET_ERROR) err_quit("connect()");
 
 	make_vertexShaders();
 	make_fragmentShaders();
@@ -1379,6 +1413,11 @@ GLvoid Reshape(int w, int h)
 
 GLvoid KeyBoard(unsigned char key, int x, int y)
 {
+	// 이벤트 동기화 
+	HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)client_sock, 0, NULL);
+//	if (hThread == NULL) { closesocket(client_sock); }
+//	else CloseHandle(hThread);
+
 	switch (key) {
 	case 'm':
 		if (player_robot.move)
@@ -1393,16 +1432,25 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			player_robot.x = 201, player_robot.z = 140, player_robot.y = 0.f, player_robot.y_radian = 0.0f;
 		break;
 	case 'q':
-		glutLeaveMainLoop();
+		if (end) {
+			glutLeaveMainLoop();
+			closesocket(sock);
+			
+			WSACleanup();
+		}
 		break;
 	default:
 		break;
 	}
 	glutPostRedisplay();
 }
-
 GLvoid SpecialKeyBoard(int key, int x, int y)
 {
+	// 이벤트 동기화 
+	HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)client_sock, 0, NULL);
+//	if (hThread == NULL) { closesocket(client_sock); }
+//	else CloseHandle(hThread);
+
 	switch (key) {
 	case GLUT_KEY_LEFT:
 		if (!end)
@@ -1571,6 +1619,32 @@ GLvoid Bump(int index)
 	}
 }
 
+DWORD WINAPI client_key_thread(LPVOID arg)
+{
+
+}
+
+bool interaction_player_status()
+{
+
+}
+void interaction_result()
+{
+
+}
+void interactin_key()
+{
+
+}
+int interaction_count()
+{
+
+}
+
+bool match_loading()
+{
+
+}
 int read_ten(int num)
 {
 	int Vplace = 0;
