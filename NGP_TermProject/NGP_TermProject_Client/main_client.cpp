@@ -266,7 +266,7 @@ GLuint fragmentShader;
 unsigned int texture_runmap[16];
 BITMAPINFO* bmp;
 
-SOCKET sock;
+SOCKET sock, server_sock;
 
 int main(int argc, char** argv)
 {
@@ -1414,7 +1414,7 @@ GLvoid Reshape(int w, int h)
 GLvoid KeyBoard(unsigned char key, int x, int y)
 {
 	// 이벤트 동기화 
-	HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)client_sock, 0, NULL);
+	HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
 //	if (hThread == NULL) { closesocket(client_sock); }
 //	else CloseHandle(hThread);
 
@@ -1430,6 +1430,10 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 	case't':
 		if (!end)
 			player_robot.x = 201, player_robot.z = 140, player_robot.y = 0.f, player_robot.y_radian = 0.0f;
+		break;
+	case 13:
+		// key - enter
+		// 매칭 화면으로 전환
 		break;
 	case 'q':
 		if (end) {
@@ -1447,7 +1451,7 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 GLvoid SpecialKeyBoard(int key, int x, int y)
 {
 	// 이벤트 동기화 
-	HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)client_sock, 0, NULL);
+	HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
 //	if (hThread == NULL) { closesocket(client_sock); }
 //	else CloseHandle(hThread);
 
@@ -1621,7 +1625,7 @@ GLvoid Bump(int index)
 
 DWORD WINAPI client_key_thread(LPVOID arg)
 {
-
+	
 }
 
 bool interaction_player_status()
