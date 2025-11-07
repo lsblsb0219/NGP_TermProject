@@ -1,6 +1,0 @@
-﻿  main_server.cpp
-C:\대학교\3학년 2학기\NGP_TermProject\NGP_TermProject\NGP_TermProject_Server\main_server.cpp(14,2): warning C4091: 'typedef ': 변수를 선언하지 않으면 'player_packet' 왼쪽은 무시됩니다.
-C:\대학교\3학년 2학기\NGP_TermProject\NGP_TermProject\NGP_TermProject_Server\main_server.cpp(61,7): warning C4101: 'buf' :참조되지 않은 지역 변수입니다.
-C:\대학교\3학년 2학기\NGP_TermProject\NGP_TermProject\NGP_TermProject_Server\main_server.cpp(27): error C4716: 'server_key_thread': 값을 반환해야 합니다.
-C:\대학교\3학년 2학기\NGP_TermProject\NGP_TermProject\NGP_TermProject_Server\main_server.cpp(23): error C4716: 'main_thread': 값을 반환해야 합니다.
-C:\대학교\3학년 2학기\NGP_TermProject\NGP_TermProject\NGP_TermProject_Server\main_server.cpp(113): error C4716: 'player_collision': 값을 반환해야 합니다.
