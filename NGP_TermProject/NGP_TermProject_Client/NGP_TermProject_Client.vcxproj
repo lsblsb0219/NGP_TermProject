@@ -132,6 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="back.bmp" />
+    <Image Include="bitmap1.bmp" />
     <Image Include="bottom.bmp" />
     <Image Include="front.bmp" />
     <Image Include="left.bmp" />
@@ -146,6 +147,7 @@
     <Image Include="N8.bmp" />
     <Image Include="N9.bmp" />
     <Image Include="right.bmp" />
+    <Image Include="title.bmp" />
     <Image Include="up.bmp" />
   </ItemGroup>
   <ItemGroup>
@@ -154,6 +156,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="NGP_TermProject_Client.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

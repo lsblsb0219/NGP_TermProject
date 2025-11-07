@@ -38,14 +38,14 @@ GLvoid Reshape(int w, int h);
 GLvoid TimerFunc(int x);
 GLvoid Bump(int index);
 
-DWORD WINAPI client_key_thread(LPVOID arg);
-
-bool interaction_player_status();
-void interaction_result();
-void interactin_key();
-int interaction_count();
-
-bool match_loading();
+//DWORD WINAPI client_key_thread(LPVOID arg);
+//
+//bool interaction_player_status();
+//void interaction_result();
+//void interactin_key();
+//int interaction_count();
+//
+//bool match_loading();
 int read_ten(int num);
 BB get_bb(Robot robot);
 bool collision(BB obj_a, BB obj_b);
@@ -263,10 +263,13 @@ GLchar* vertexSource, * fragmentSource;
 GLuint shaderID;
 GLuint vertexShader;
 GLuint fragmentShader;
-unsigned int texture_runmap[16];
+unsigned int texture_runmap[17];
 BITMAPINFO* bmp;
 
-SOCKET sock, server_sock;
+int gameState = 0;		// 0: 타이틀, 1: 본게임, 2:엔딩
+GLuint titleTexture;	// 타이틀 배경 BMP
+
+//SOCKET sock, server_sock;
 
 int main(int argc, char** argv)
 {
@@ -287,24 +290,25 @@ int main(int argc, char** argv)
 	else
 		std::cout << "GLEW Initialized\n";
 
-	// 윈속 초기화
-	WSADATA wsa;
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-		return 1;
+	//// 윈속 초기화
+	//WSADATA wsa;
+	//if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+	//	return 1;
 
-	// 소켓 생성
-	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock == INVALID_SOCKET) err_quit("socket()");
-	
-	// connect()
-	struct sockaddr_in serveraddr;
-	memset(&serveraddr, 0, sizeof(serveraddr));
-	serveraddr.sin_family = AF_INET;
-	inet_pton(AF_INET, SERVERIP, &serveraddr.sin_addr);
-	serveraddr.sin_port = htons(SERVERPORT);
-	int retval = connect(sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
-	if (retval == SOCKET_ERROR) err_quit("connect()");
+	//// 소켓 생성
+	//sock = socket(AF_INET, SOCK_STREAM, 0);
+	//if (sock == INVALID_SOCKET) err_quit("socket()");
+	//
+	//// connect()
+	//struct sockaddr_in serveraddr;
+	//memset(&serveraddr, 0, sizeof(serveraddr));
+	//serveraddr.sin_family = AF_INET;
+	//inet_pton(AF_INET, SERVERIP, &serveraddr.sin_addr);
+	//serveraddr.sin_port = htons(SERVERPORT);
+	//int retval = connect(sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+	//if (retval == SOCKET_ERROR) err_quit("connect()");
 
+	glEnable(GL_DEPTH_TEST);
 	make_vertexShaders();
 	make_fragmentShaders();
 	shaderID = make_shaderProgram();
@@ -499,7 +503,7 @@ void InitBuffer()
 }
 void InitTextures() 
 {
-	glGenTextures(16, texture_runmap);
+	glGenTextures(17, texture_runmap);
 	glUseProgram(shaderID);
 
 	//--- texture[0]
@@ -634,7 +638,7 @@ void InitTextures()
 	unsigned char* data12 = LoadDIBitmap("N5.bmp", &bmp);
 	glTexImage2D(GL_TEXTURE_2D, 0, 3, 1024, 1024, 0, GL_BGR, GL_UNSIGNED_BYTE, data12);
 
-	//--- texture[12 - 6
+	//--- texture[12] - 6
 	int tLocation13 = glGetUniformLocation(shaderID, "outTexture13");
 	glUniform1i(tLocation13, 12);
 	glBindTexture(GL_TEXTURE_2D, texture_runmap[12]);
@@ -677,25 +681,56 @@ void InitTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	unsigned char* data16 = LoadDIBitmap("N9.bmp", &bmp);
 	glTexImage2D(GL_TEXTURE_2D, 0, 3, 1024, 1024, 0, GL_BGR, GL_UNSIGNED_BYTE, data16);
+
+	// --- texture[16] - title texture
+	int tLocation17 = glGetUniformLocation(shaderID, "outTexture17");
+	glUniform1i(tLocation17, 16);
+	glBindTexture(GL_TEXTURE_2D, texture_runmap[16]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	unsigned char* data17 = LoadDIBitmap("title.bmp", &bmp);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, data17);
 }
 
 GLfloat camera_move[3]{ 0.0f, 2.0f, 2.5f }, camera_look[3]{ 0.0f, 0.5f, 0.0f }, light_pos[3]{ 0.0f, 2.0f, 2.0f }, camera_radian = 0.0f;
 int end_anime;
 BB map_bb{ -204.0f,-153.f,-198.f,151.f }, map_bb2{ -204.f,-153.f,204.f,-147.f }, map_bb3{ 198.0f,-153.f,204.f,151.f }, goal{198.f,149.f,204.f,151.f};
-bool end = false;
 
 GLvoid drawScene()
 {
 	glUseProgram(shaderID);
 	glBindVertexArray(VAO);
 
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+	glClearColor(0.f, 0.f, 0.f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glEnable(GL_DEPTH_TEST);
+	// 타이틀 화면==============================================================================================================================================================================
+	if (gameState == 0)
+	{
+		GLuint indexLoc = glGetUniformLocation(shaderID, "index");
+		glUniform1i(indexLoc, 2);
+
+		glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 view = glm::mat4(1.0f);
+		glm::mat4 proj = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f);
+		GLint modelLoc = glGetUniformLocation(shaderID, "modelTransform");
+		GLint viewLoc = glGetUniformLocation(shaderID, "viewTransform");
+		GLint projLoc = glGetUniformLocation(shaderID, "projectionTransform");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
+
+		glActiveTexture(GL_TEXTURE0 + 16);
+		glBindTexture(GL_TEXTURE_2D, texture_runmap[16]);
+
+		glDrawArrays(GL_QUADS, 0, 4);
+
+	}
 
 	//그냥 맵===================================================================================================================================================================================
-	if(!end){
+	else if (gameState == 1) {
 		glViewport(0, 0, background_width, background_height);
 
 		unsigned int modelLocation = glGetUniformLocation(shaderID, "modelTransform");//월드 변환 행렬값을 셰이더의 uniform mat4 modelTransform에게 넘겨줌
@@ -704,7 +739,7 @@ GLvoid drawScene()
 
 		//원근 투영
 		glm::mat4 kTransform = glm::mat4(1.0f);
-		kTransform = glm::perspective(glm::radians(45.0f), 4.0f/3.0f, 0.1f, 300.0f);
+		kTransform = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 300.0f);
 		kTransform = glm::translate(kTransform, glm::vec3(0.0f, 0.0f, -8.0f));
 		glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, &kTransform[0][0]);
 
@@ -1035,7 +1070,7 @@ GLvoid drawScene()
 		}
 	}
 	//미니 맵===================================================================================================================================================================================
-	if(!end)  {
+	else if(gameState == 1)  {
 		glViewport(0 * background_width / 4, 3 * background_height / 4, background_width / 4, background_height / 4); /*대충 오른쪽상단 어딘가에 배치 바라요*/
 
 		unsigned int modelLocation = glGetUniformLocation(shaderID, "modelTransform");//월드 변환 행렬값을 셰이더의 uniform mat4 modelTransform에게 넘겨줌
@@ -1189,7 +1224,7 @@ GLvoid drawScene()
 		}
 	}
 	//엔딩 창===================================================================================================================================================================================
-	if (end) {
+	else if (gameState == 2) {
 		glViewport(0, 0, background_width, background_height);
 
 		unsigned int modelLocation = glGetUniformLocation(shaderID, "modelTransform");				//월드 변환 행렬값을 셰이더의 uniform mat4 modelTransform에게 넘겨줌
@@ -1414,7 +1449,7 @@ GLvoid Reshape(int w, int h)
 GLvoid KeyBoard(unsigned char key, int x, int y)
 {
 	// 이벤트 동기화 
-	HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
+	//HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
 //	if (hThread == NULL) { closesocket(client_sock); }
 //	else CloseHandle(hThread);
 
@@ -1428,17 +1463,19 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			player_robot.shake_dir = 1;
 		break;
 	case't':
-		if (!end)
+		if (gameState == 1)
 			player_robot.x = 201, player_robot.z = 140, player_robot.y = 0.f, player_robot.y_radian = 0.0f;
 		break;
 	case 13:
 		// key - enter
 		// 매칭 화면으로 전환
+		if (gameState == 0)
+			gameState = 1;
 		break;
 	case 'q':
-		if (end) {
+		if (gameState == 2) {
 			glutLeaveMainLoop();
-			closesocket(sock);
+			//closesocket(sock);
 			
 			WSACleanup();
 		}
@@ -1451,17 +1488,17 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 GLvoid SpecialKeyBoard(int key, int x, int y)
 {
 	// 이벤트 동기화 
-	HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
+	//HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
 //	if (hThread == NULL) { closesocket(client_sock); }
 //	else CloseHandle(hThread);
 
 	switch (key) {
 	case GLUT_KEY_LEFT:
-		if (!end)
+		if (gameState == 1)
 			player_robot.y_radian += 45.0f;
 		break;
 	case GLUT_KEY_RIGHT:
-		if (!end)
+		if (gameState == 1)
 			player_robot.y_radian -= 45.0f;
 		break;
 	default:
@@ -1472,7 +1509,7 @@ GLvoid SpecialKeyBoard(int key, int x, int y)
 
 GLvoid TimerFunc(int x)
 {
-	if (end) {
+	if (gameState == 2) {
 		if (end_anime == 0) {
 			camera_radian += 1.0f;
 			if (camera_radian == 180.0f)
@@ -1522,7 +1559,7 @@ GLvoid TimerFunc(int x)
 				player_robot.x = 0.0f, player_robot.z = 0.0f, player_robot.y = 0.0f, player_robot.y_radian = 0.0f, 
 					player_robot.shake = 0.0f, player_robot.shake_dir = 1;
 				player_robot.move = false;
-				end = true;
+				gameState = 2;
 				std::cout << finish_time - start_time << '\n';
 				std::cout << read_ten(finish_time - start_time) <<'\n';
 			}
@@ -1539,7 +1576,7 @@ GLvoid TimerFunc(int x)
 		}
 
 		for (int i = 0; i < 19; ++i) {
-			if (end) {
+			if (gameState == 2) {
 				if (i < 2) {
 					block_robot[i].x = 1.0f * (i % 5) - 2.0f;
 					block_robot[i].z = -1.0f * (i / 5);
@@ -1597,7 +1634,7 @@ GLvoid TimerFunc(int x)
 }
 GLvoid Bump(int index)
 {
-	if (!end) {
+	if (gameState == 1) {
 		if (collision(map_bb, player_robot.bb) || collision(map_bb2, player_robot.bb) || collision(map_bb3, player_robot.bb)) {
 			GLfloat radian = atan2(player_robot.road[1][0] - player_robot.road[0][0], player_robot.road[1][1] - player_robot.road[0][1]);
 			player_robot.x += sin(radian) * player_robot.speed;
@@ -1623,32 +1660,32 @@ GLvoid Bump(int index)
 	}
 }
 
-DWORD WINAPI client_key_thread(LPVOID arg)
-{
-	
-}
-
-bool interaction_player_status()
-{
-
-}
-void interaction_result()
-{
-
-}
-void interactin_key()
-{
-
-}
-int interaction_count()
-{
-
-}
-
-bool match_loading()
-{
-
-}
+//DWORD WINAPI client_key_thread(LPVOID arg)
+//{
+//	
+//}
+//
+//bool interaction_player_status()
+//{
+//
+//}
+//void interaction_result()
+//{
+//
+//}
+//void interactin_key()
+//{
+//
+//}
+//int interaction_count()
+//{
+//
+//}
+//
+//bool match_loading()
+//{
+//
+//}
 int read_ten(int num)
 {
 	int Vplace = 0;

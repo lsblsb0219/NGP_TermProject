@@ -20,6 +20,7 @@ uniform sampler2D outTexture13;
 uniform sampler2D outTexture14;
 uniform sampler2D outTexture15;
 uniform sampler2D outTexture16;
+uniform sampler2D outTexture17;
 
 uniform int index;
 uniform vec3 objectColor;
@@ -28,6 +29,7 @@ uniform vec3 lightColor; //--- 응용 프로그램에서 설정한 조명 색상
 
 void main(void) 
 {	
+	FragColor = vec4(0.0, 0.0, 0.0, 1.0); // 기본값 (혹시 case 안 들어갈 때 대비)
 	float ambientLight = 0.75; //--- 주변 조명 계수
 	vec3 ambient = ambientLight * lightColor; //--- 주변 조명 값
 	
@@ -58,7 +60,11 @@ void main(void)
 		texture (outTexture13, out_TexCoord) + 
 		texture (outTexture14, out_TexCoord) + 
 		texture (outTexture15, out_TexCoord) + 
-		texture (outTexture16, out_TexCoord) ) *  vec4 (result, 1.0);
+		texture (outTexture16, out_TexCoord)) *  vec4 (result, 1.0);
 		break;
+
+	case 2:
+    FragColor = texture(outTexture17, vec2(1.0 - out_TexCoord.x, out_TexCoord.y));
+    break;
 	}
 }
