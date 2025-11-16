@@ -295,6 +295,11 @@ int main(int argc, char** argv)
 	//if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	//	return 1;
 
+	// 이벤트 동기화 
+	//HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
+	//	if (hThread == NULL) { closesocket(client_sock); }
+	//	else CloseHandle(hThread);
+	
 	//// 소켓 생성
 	//sock = socket(AF_INET, SOCK_STREAM, 0);
 	//if (sock == INVALID_SOCKET) err_quit("socket()");
@@ -1449,19 +1454,16 @@ GLvoid Reshape(int w, int h)
 
 GLvoid KeyBoard(unsigned char key, int x, int y)
 {
-	// 이벤트 동기화 
-	//HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
-//	if (hThread == NULL) { closesocket(client_sock); }
-//	else CloseHandle(hThread);
-
 	switch (key) {
 	case 'm':
-		if (player_robot.move)
-			player_robot.move = false;
-		else
-			player_robot.move = true;
-		if (player_robot.shake_dir == 0)
-			player_robot.shake_dir = 1;
+		if (gameState == 1 && CountDown == 0) {
+			if (player_robot.move)
+				player_robot.move = false;
+			else
+				player_robot.move = true;
+			if (player_robot.shake_dir == 0)
+				player_robot.shake_dir = 1;
+		}
 		break;
 	case't':
 		if (gameState == 1)
@@ -1471,7 +1473,9 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 		// key - enter
 		// 매칭 화면으로 전환
 		if (gameState == 0)
+		{
 			gameState = 1;
+		}
 		break;
 	case 'q':
 		if (gameState == 2) {
@@ -1488,11 +1492,6 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 }
 GLvoid SpecialKeyBoard(int key, int x, int y)
 {
-	// 이벤트 동기화 
-	//HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
-//	if (hThread == NULL) { closesocket(client_sock); }
-//	else CloseHandle(hThread);
-
 	switch (key) {
 	case GLUT_KEY_LEFT:
 		if (gameState == 1)
@@ -1555,6 +1554,7 @@ GLvoid TimerFunc(int x)
 			if (player_robot.speed < 0.25f)
 				player_robot.speed += 0.001f;
 
+			// 골인 지점에 로봇이 들어왔는지 체크
 			if (collision(goal, player_robot.bb)) {
 				finish_time = int(time(NULL));
 				player_robot.x = 0.0f, player_robot.z = 0.0f, player_robot.y = 0.0f, player_robot.y_radian = 0.0f, 
@@ -1570,7 +1570,8 @@ GLvoid TimerFunc(int x)
 			player_robot.speed += 0.01f;
 
 			if (player_robot.y < -5.f) {
-				player_robot.y_radian = 180.0f, player_robot.shake_dir = 0, player_robot.shake = false, player_robot.speed = 0.0f;;
+				player_robot.y_radian = 180.0f, player_robot.shake_dir = 0, player_robot.shake = false, player_robot.speed = 0.0f;
+				// 부활 위치 조정 필요 
 				player_robot.x = -201, player_robot.z = 150, player_robot.y = 0.f;
 				player_robot.bb = get_bb(player_robot);
 			}
