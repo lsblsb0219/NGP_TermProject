@@ -31,6 +31,8 @@ struct Robot {
 };
 Robot player_robot, block_robot[19];
 
+HANDLE hThread;
+
 GLvoid drawScene();
 GLvoid KeyBoard(unsigned char key, int x, int y);
 GLvoid SpecialKeyBoard(int key, int x, int y);
@@ -42,7 +44,6 @@ GLvoid Bump(int index);
 //
 //bool interaction_player_status();
 //void interaction_result();
-//void interactin_key();
 //int interaction_count();
 //
 //bool match_loading();
@@ -269,7 +270,7 @@ BITMAPINFO* bmp;
 int gameState = 0;		// 0: 타이틀, 1: 본게임, 2:엔딩
 GLuint titleTexture;	// 타이틀 배경 BMP
 
-//SOCKET sock, server_sock;
+SOCKET sock, server_sock;
 
 int main(int argc, char** argv)
 {
@@ -290,15 +291,15 @@ int main(int argc, char** argv)
 	else
 		std::cout << "GLEW Initialized\n";
 
-	//// 윈속 초기화
-	//WSADATA wsa;
-	//if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-	//	return 1;
-
+	// 윈속 초기화
+	WSADATA wsa;
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+		return 1;
+	
 	// 이벤트 동기화 
-	//HANDLE hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
-	//	if (hThread == NULL) { closesocket(client_sock); }
-	//	else CloseHandle(hThread);
+	hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
+	if (hThread == NULL) { closesocket(client_sock); }
+	else CloseHandle(hThread);
 	
 	//// 소켓 생성
 	//sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -1481,7 +1482,6 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 		if (gameState == 2) {
 			glutLeaveMainLoop();
 			//closesocket(sock);
-			
 			WSACleanup();
 		}
 		break;
@@ -1672,10 +1672,6 @@ GLvoid Bump(int index)
 //
 //}
 //void interaction_result()
-//{
-//
-//}
-//void interactin_key()
 //{
 //
 //}
