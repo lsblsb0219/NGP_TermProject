@@ -30,6 +30,7 @@ struct Robot {
 	bool move = false; // 움직이고 있는지(대기 후 이동)
 };
 Robot player_robot, block_robot[19];
+int CountDown = 0;
 
 HANDLE hThread;
 
@@ -297,9 +298,9 @@ int main(int argc, char** argv)
 		return 1;
 	
 	// 이벤트 동기화 
-	hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
-	if (hThread == NULL) { closesocket(client_sock); }
-	else CloseHandle(hThread);
+	//hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
+	//if (hThread == NULL) { closesocket(client_sock); }
+	//else CloseHandle(hThread);
 	
 	//// 소켓 생성
 	//sock = socket(AF_INET, SOCK_STREAM, 0);
