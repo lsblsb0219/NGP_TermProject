@@ -1683,7 +1683,7 @@ GLvoid Bump(int index)
 //
 //bool match_loading()
 //{
-//
+//	
 //}
 int read_ten(int num)
 {

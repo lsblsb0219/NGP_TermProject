@@ -28,6 +28,8 @@ DWORD WINAPI server_key_thread(LPVOID arg)
 
 player_packet player_collision();
 
+HANDLE hKeyEvent;
+
 int main(int argc, char* argv[])
 {
 	int retval;
@@ -53,6 +55,9 @@ int main(int argc, char* argv[])
 	// listen()
 	retval = listen(listen_sock, SOMAXCONN);
 	if (retval == SOCKET_ERROR) err_quit("listen()");
+
+	// CreateEvent()
+	hKeyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 	// 데이터 통신에 사용할 변수
 	SOCKET client_sock;
