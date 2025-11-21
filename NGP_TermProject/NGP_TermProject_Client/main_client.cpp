@@ -12,7 +12,7 @@
 
 #include "..\Common.h"
 
-char* SERVERIP = (char*)"";
+char* SERVERIP = (char*)"192.168.78.234";
 #define SERVERPORT 9000
 #define BUFSIZE    512
 
@@ -48,6 +48,7 @@ GLvoid Bump(int index);
 //int interaction_count();
 //
 //bool match_loading();
+
 int read_ten(int num);
 BB get_bb(Robot robot);
 bool collision(BB obj_a, BB obj_b);
@@ -275,6 +276,7 @@ SOCKET sock, server_sock;
 
 int main(int argc, char** argv)
 {
+	// OpenGL 초기화
 	background_width = 1200, background_height = 800;
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
@@ -292,42 +294,23 @@ int main(int argc, char** argv)
 	else
 		std::cout << "GLEW Initialized\n";
 
-	// 윈속 초기화
-	WSADATA wsa;
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-		return 1;
-	
-	// 이벤트 동기화 
-	//hThread = CreateThread(NULL, 0, client_key_thread, (LPVOID)server_sock, 0, NULL);
-	//if (hThread == NULL) { closesocket(client_sock); }
-	//else CloseHandle(hThread);
-	
-	//// 소켓 생성
-	//sock = socket(AF_INET, SOCK_STREAM, 0);
-	//if (sock == INVALID_SOCKET) err_quit("socket()");
-	//
-	//// connect()
-	//struct sockaddr_in serveraddr;
-	//memset(&serveraddr, 0, sizeof(serveraddr));
-	//serveraddr.sin_family = AF_INET;
-	//inet_pton(AF_INET, SERVERIP, &serveraddr.sin_addr);
-	//serveraddr.sin_port = htons(SERVERPORT);
-	//int retval = connect(sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
-	//if (retval == SOCKET_ERROR) err_quit("connect()");
-
 	glEnable(GL_DEPTH_TEST);
+
 	make_vertexShaders();
 	make_fragmentShaders();
 	shaderID = make_shaderProgram();
 	InitBuffer();
 	InitTextures();
+
 	glutKeyboardFunc(KeyBoard);
 	glutSpecialFunc(SpecialKeyBoard);
 	glutTimerFunc(10, TimerFunc, 1);
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(Reshape);
+
 	glutMainLoop();
 }
+
 void make_vertexShaders()
 {
 	vertexSource = filetobuf("vertexShader.glsl");
@@ -1456,39 +1439,79 @@ GLvoid Reshape(int w, int h)
 
 GLvoid KeyBoard(unsigned char key, int x, int y)
 {
-	switch (key) {
-	case 'm':
-		if (gameState == 1 && CountDown == 0) {
-			if (player_robot.move)
-				player_robot.move = false;
-			else
-				player_robot.move = true;
-			if (player_robot.shake_dir == 0)
-				player_robot.shake_dir = 1;
+	if (gameState == 0) {
+		switch (key) {
+		case 13:
+			// key - enter
+			printf("서버에 접속 중...\n");
+
+			// 윈속 초기화
+			WSADATA wsa;
+			if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+				return;
+
+			// 소켓 생성
+			sock = socket(AF_INET, SOCK_STREAM, 0);
+			if (sock == INVALID_SOCKET) err_quit("socket()");
+
+			// connect()
+			struct sockaddr_in serveraddr;
+			memset(&serveraddr, 0, sizeof(serveraddr));
+			serveraddr.sin_family = AF_INET;
+			inet_pton(AF_INET, SERVERIP, &serveraddr.sin_addr);
+			serveraddr.sin_port = htons(SERVERPORT);
+
+			int retval = connect(sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+			if (retval == SOCKET_ERROR) err_quit("connect()");
+
+			printf("서버 접속 성공! GAME_START 대기...\n");
+
+			// GAME_START 수신
+			char buf[256];
+			retval = recv(sock, buf, sizeof(buf) - 1, 0);
+			if (retval <= 0) {
+				printf("서버 종료\n");
+				closesocket(sock);
+				return;
+			}
+			buf[retval] = '\0';
+
+			if (strcmp(buf, "GAME_START") == 0) {
+				printf("[클라이언트] 게임 시작 패킷 수신\n");
+				gameState = 1;
+			}
+
+			break;
 		}
-		break;
-	case't':
-		if (gameState == 1)
-			player_robot.x = 201, player_robot.z = 140, player_robot.y = 0.f, player_robot.y_radian = 0.0f;
-		break;
-	case 13:
-		// key - enter
-		// 매칭 화면으로 전환
-		if (gameState == 0)
-		{
-			gameState = 1;
-		}
-		break;
-	case 'q':
-		if (gameState == 2) {
-			glutLeaveMainLoop();
-			//closesocket(sock);
-			WSACleanup();
-		}
-		break;
-	default:
-		break;
 	}
+	else if (gameState == 1) {
+		switch (key) {
+		case 'm':
+			if (gameState == 1 && CountDown == 0) {
+				if (player_robot.move)
+					player_robot.move = false;
+				else
+					player_robot.move = true;
+				if (player_robot.shake_dir == 0)
+					player_robot.shake_dir = 1;
+			}
+			break;
+		case't':
+			if (gameState == 1)
+				player_robot.x = 201, player_robot.z = 140, player_robot.y = 0.f, player_robot.y_radian = 0.0f;
+			break;
+		case 'q':
+			if (gameState == 2) {
+				glutLeaveMainLoop();
+				//closesocket(sock);
+				WSACleanup();
+			}
+			break;
+		default:
+			break;
+		}
+	}
+	
 	glutPostRedisplay();
 }
 GLvoid SpecialKeyBoard(int key, int x, int y)
@@ -1685,6 +1708,7 @@ GLvoid Bump(int index)
 //{
 //	
 //}
+
 int read_ten(int num)
 {
 	int Vplace = 0;
