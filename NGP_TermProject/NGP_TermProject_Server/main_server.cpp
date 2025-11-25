@@ -10,9 +10,13 @@ typedef struct Bounding_Box {
 }BB;
 
 typedef struct player_packet {
-	float x, y, z, size, road[2][2], speed, y_radian;
-	BB bb;
-	bool move;
+	float size{}, x{}, z{}, road[2][2]{},
+		speed = 0.0f,
+		shake = 1, y_radian = 180.0f, // shake = (발,다리)회전 각도, radian = 몸 y축 회전 각도
+		y{};
+	BB bb{}; //왼쪽 상단, 오른쪽 하단
+	int shake_dir{}, dir{};
+	bool move = false; // 움직이고 있는지(대기 후 이동)
 };
 
 void send_collision_packet();

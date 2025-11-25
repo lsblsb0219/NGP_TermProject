@@ -29,7 +29,7 @@ struct Robot {
 	int shake_dir{}, dir{};
 	bool move = false; // 움직이고 있는지(대기 후 이동)
 };
-Robot player_robot, block_robot[19];
+Robot player_robot[3], block_robot[19];
 int CountDown = 0;
 
 HANDLE hThread;
@@ -416,9 +416,9 @@ void InitBuffer()
 	//--- attribute 인덱스 1번을 사용 가능하게 함.
 	glEnableVertexAttribArray(2);
 
-	player_robot.move = false;
-	player_robot.y_radian = 180.0f, player_robot.shake_dir = 1;
-	player_robot.x = -201, player_robot.z = 150, player_robot.y = 0.f;
+	player_robot[client_id].move = false;
+	player_robot[client_id].y_radian = 180.0f, player_robot[client_id].shake_dir = 1;
+	player_robot[client_id].x = -201, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
 	{
 		block_robot[0].road[0][0] = -203,	block_robot[0].road[0][1] = 140;
 		block_robot[0].road[1][0] = -203,	block_robot[0].road[1][1] = -150;
@@ -490,7 +490,7 @@ void InitBuffer()
 		if (block_robot[i].road[0][1] > block_robot[i].road[1][1])
 			block_robot[i].y_radian = 180.0f;
 	}
-	player_robot.bb = get_bb(player_robot);
+	player_robot[client_id].bb = get_bb(player_robot[client_id]);
 	start_time = int(time(NULL));
 }
 void InitTextures() 
@@ -738,8 +738,8 @@ GLvoid drawScene()
 
 		//뷰잉 변환
 		glm::mat4 vTransform = glm::mat4(1.0f);
-		glm::vec3 cameraPos = glm::vec3(player_robot.x - 1.0f * sin(glm::radians(player_robot.y_radian)), 0.5f, player_robot.z - 1.0f * cos(glm::radians(player_robot.y_radian))); //--- 카메라 위치
-		glm::vec3 cameraDirection = glm::vec3(player_robot.x, 0.0f, player_robot.z); //--- 카메라 바라보는 방향
+		glm::vec3 cameraPos = glm::vec3(player_robot[client_id].x - 1.0f * sin(glm::radians(player_robot[client_id].y_radian)), 0.5f, player_robot[client_id].z - 1.0f * cos(glm::radians(player_robot[client_id].y_radian))); //--- 카메라 위치
+		glm::vec3 cameraDirection = glm::vec3(player_robot[client_id].x, 0.0f, player_robot[client_id].z); //--- 카메라 바라보는 방향
 		glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f); //--- 카메라 위쪽 방향
 
 		vTransform = glm::rotate(vTransform, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -768,9 +768,8 @@ GLvoid drawScene()
 		glUniform1i(indexLocation, 0);
 
 		/*여기에 로봇*/
-		{
-			drawRobot(axisTransForm, modelLocation, player_robot);
-		}
+		for (int i = 0; i < 3; ++i)
+			drawRobot(axisTransForm, modelLocation, player_robot[i]);	// 플레이어 2, 3
 		/*이건 장애물 로봇*/
 		glUniform3f(objColorLocation, 1.0f, 1.0f, 1.0f);
 		for (int i = 0; i < 19; ++i) {
@@ -1033,7 +1032,7 @@ GLvoid drawScene()
 
 			//축
 			glm::mat4 axisTransForm = glm::mat4(1.0f);//변환 행렬 생성 T
-			axisTransForm = glm::rotate(axisTransForm, glm::radians(player_robot.y_radian - 180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			axisTransForm = glm::rotate(axisTransForm, glm::radians(player_robot[client_id].y_radian - 180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 			axisTransForm = glm::translate(axisTransForm, glm::vec3(0.0f, 0.0f, 2.0f));
 			axisTransForm = glm::rotate(axisTransForm, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 			glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(axisTransForm));//변환 행렬을 셰이더에 전달
@@ -1149,9 +1148,9 @@ GLvoid drawScene()
 
 				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
 				model = glm::scale(model, glm::vec3(0.022f, 1.0f, 0.02f));
-				model = glm::translate(model, glm::vec3(-player_robot.x, 1.0f, -player_robot.z));
+				model = glm::translate(model, glm::vec3(-player_robot[client_id].x, 1.0f, -player_robot[client_id].z));
 				model = glm::scale(model, glm::vec3(50.0f, 0.0f, 50.0f));
-				model = glm::rotate(model, glm::radians(player_robot.y_radian), glm::vec3(0.0f, 1.0f, 0.0f));
+				model = glm::rotate(model, glm::radians(player_robot[client_id].y_radian), glm::vec3(0.0f, 1.0f, 0.0f));
 				model = axisTransForm * model;
 				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 
@@ -1208,14 +1207,14 @@ GLvoid drawScene()
 		/*여기에 로봇*/
 		{
 			glm::mat4 shapeTransForm = glm::mat4(1.0f);//변환 행렬 생성 T
-			shapeTransForm = glm::translate(shapeTransForm, glm::vec3(player_robot.x, player_robot.y, player_robot.z));						//robot위치
-			shapeTransForm = glm::rotate(shapeTransForm, glm::radians(player_robot.y_radian), glm::vec3(0.0f, 1.0f, 0.0f));					//보는 방향
+			shapeTransForm = glm::translate(shapeTransForm, glm::vec3(player_robot[client_id].x, player_robot[client_id].y, player_robot[client_id].z));						//robot위치
+			shapeTransForm = glm::rotate(shapeTransForm, glm::radians(player_robot[client_id].y_radian), glm::vec3(0.0f, 1.0f, 0.0f));					//보는 방향
 			shapeTransForm = glm::scale(shapeTransForm, glm::vec3(2.0f, 2.0f, 2.0f));														//size
 			/*오른다리*/ {
 				glUniform3f(objColorLocation, 0.0f, 0.6f, 0.6f);
 				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
 				model = glm::translate(model, glm::vec3(0.05f, 0.2f, 0.0f));																//몸 위치에 따라 조정
-				model = glm::rotate(model, glm::radians(player_robot.shake), glm::vec3(0.0f, 0.0f, 1.0f));									//다리 흔들기
+				model = glm::rotate(model, glm::radians(player_robot[client_id].shake), glm::vec3(0.0f, 0.0f, 1.0f));									//다리 흔들기
 				model = glm::translate(model, glm::vec3(0.0f, -0.1f, 0.0f));																//원점조정
 				model = glm::scale(model, glm::vec3(0.05f, 0.1f, 0.05f));																	//size
 				model = axisTransForm * shapeTransForm * model;
@@ -1224,7 +1223,7 @@ GLvoid drawScene()
 			} /*왼다리*/ {
 				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
 				model = glm::translate(model, glm::vec3(-0.05f, 0.2f, 0.0f));																//몸 위치에 따라 조정
-				model = glm::rotate(model, glm::radians(-player_robot.shake), glm::vec3(0.0f, 0.0f, 1.0f));									//다리 흔들기
+				model = glm::rotate(model, glm::radians(-player_robot[client_id].shake), glm::vec3(0.0f, 0.0f, 1.0f));									//다리 흔들기
 				model = glm::translate(model, glm::vec3(0.0f, -0.1f, 0.0f));																//원점조정
 				model = glm::scale(model, glm::vec3(0.05f, 0.1f, 0.05f));																	//size
 				model = axisTransForm * shapeTransForm * model;
@@ -1242,7 +1241,7 @@ GLvoid drawScene()
 				glUniform3f(objColorLocation, 0.6f, 0.6f, 0.0f);
 				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
 				model = glm::translate(model, glm::vec3(0.125f, 0.5f, 0.0f));
-				model = glm::rotate(model, glm::radians(-player_robot.shake * 3), glm::vec3(1.0f, 0.0f, 0.0f));
+				model = glm::rotate(model, glm::radians(-player_robot[client_id].shake * 3), glm::vec3(1.0f, 0.0f, 0.0f));
 				model = glm::translate(model, glm::vec3(0.0f, -0.13f, 0.0f));
 				model = glm::scale(model, glm::vec3(0.025f, 0.13f, 0.05f));																	//size
 				model = axisTransForm * shapeTransForm * model;
@@ -1251,7 +1250,7 @@ GLvoid drawScene()
 			} /*왼  팔*/ {
 				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
 				model = glm::translate(model, glm::vec3(-0.125f, 0.5f, 0.0f));
-				model = glm::rotate(model, glm::radians(-player_robot.shake * 3), glm::vec3(1.0f, 0.0f, 0.0f));
+				model = glm::rotate(model, glm::radians(-player_robot[client_id].shake * 3), glm::vec3(1.0f, 0.0f, 0.0f));
 				model = glm::translate(model, glm::vec3(0.0f, -0.13f, 0.0f));
 				model = glm::scale(model, glm::vec3(0.025f, 0.13f, 0.05f));																	//size
 				model = axisTransForm * shapeTransForm * model;
@@ -1413,12 +1412,12 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			retval = recv(sock, (char*)&client_id, sizeof(int), 0);
 			if (client_id == SOCKET_ERROR) err_quit("recv()");
 			else if (client_id == 0) {
-				player_robot.x = -203, player_robot.z = 150, player_robot.y = 0.f;
+				player_robot[client_id].x = -203, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
 			}else if(client_id == 1){
-				player_robot.x = -201, player_robot.z = 150, player_robot.y = 0.f;
+				player_robot[client_id].x = -201, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
 			}
 			else if (client_id == 2) {
-				player_robot.x = -199, player_robot.z = 150, player_robot.y = 0.f;
+				player_robot[client_id].x = -199, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
 			}
 
 			// GAME_START 수신
@@ -1443,17 +1442,17 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 		switch (key) {
 		case 'm':
 			if (CountDown == 0) {
-				if (player_robot.move)
-					player_robot.move = false;
+				if (player_robot[client_id].move)
+					player_robot[client_id].move = false;
 				else
-					player_robot.move = true;
-				if (player_robot.shake_dir == 0)
-					player_robot.shake_dir = 1;
+					player_robot[client_id].move = true;
+				if (player_robot[client_id].shake_dir == 0)
+					player_robot[client_id].shake_dir = 1;
 			}
 			break;
 		case't':
 			// [테스트용] 결승점 앞으로 텔포
-			player_robot.x = 201, player_robot.z = 140, player_robot.y = 0.f, player_robot.y_radian = 0.0f;
+			player_robot[client_id].x = 201, player_robot[client_id].z = 140, player_robot[client_id].y = 0.f, player_robot[client_id].y_radian = 0.0f;
 			break;
 		default:
 			break;
@@ -1479,10 +1478,10 @@ GLvoid SpecialKeyBoard(int key, int x, int y)
 	if (gameState == 1){
 		switch (key) {
 		case GLUT_KEY_LEFT:
-			player_robot.y_radian += 45.0f;
+			player_robot[client_id].y_radian += 45.0f;
 			break;
 		case GLUT_KEY_RIGHT:
-			player_robot.y_radian -= 45.0f;
+			player_robot[client_id].y_radian -= 45.0f;
 			break;
 		default:
 			break;
@@ -1510,61 +1509,61 @@ GLvoid TimerFunc(int x)
 				end_anime++;
 		}
 		else {
-			player_robot.shake += player_robot.shake_dir * 1.0f;
-			if (player_robot.shake <= 0.0f || player_robot.shake >= 60.0f)
-				player_robot.shake_dir *= -1;
+			player_robot[client_id].shake += player_robot[client_id].shake_dir * 1.0f;
+			if (player_robot[client_id].shake <= 0.0f || player_robot[client_id].shake >= 60.0f)
+				player_robot[client_id].shake_dir *= -1;
 			for (int i = 0; i < 19; ++i) {
-				block_robot[i].shake += block_robot[i].shake_dir * 5.0f * player_robot.speed;
+				block_robot[i].shake += block_robot[i].shake_dir * 5.0f * player_robot[client_id].speed;
 				if (block_robot[i].shake <= 0.0f || block_robot[i].shake >= 60.0f)
 					block_robot[i].shake_dir *= -1;
 			}
 		}
 	}
 	else {
-		if (player_robot.move) {
-			if (collision(map_bb, player_robot.bb) || collision(map_bb2, player_robot.bb) || collision(map_bb3, player_robot.bb)) {
-				player_robot.x += sin(glm::radians(player_robot.y_radian)) * player_robot.speed;
-				player_robot.z += cos(glm::radians(player_robot.y_radian)) * player_robot.speed;
-				player_robot.bb = get_bb(player_robot);
+		if (player_robot[client_id].move) {
+			if (collision(map_bb, player_robot[client_id].bb) || collision(map_bb2, player_robot[client_id].bb) || collision(map_bb3, player_robot[client_id].bb)) {
+				player_robot[client_id].x += sin(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
+				player_robot[client_id].z += cos(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
+				player_robot[client_id].bb = get_bb(player_robot[client_id]);
 			}
 			else {
-				player_robot.y -= 0.1f;
-				player_robot.speed = 0.0f;
-				player_robot.move = false;
+				player_robot[client_id].y -= 0.1f;
+				player_robot[client_id].speed = 0.0f;
+				player_robot[client_id].move = false;
 			}
-			player_robot.shake += player_robot.shake_dir * 20 * player_robot.speed;
-			if (player_robot.shake <= -60.0f || player_robot.shake >= 60.0f)
-				player_robot.shake_dir *= -1;
-			if (player_robot.speed < 0.25f)
-				player_robot.speed += 0.001f;
+			player_robot[client_id].shake += player_robot[client_id].shake_dir * 20 * player_robot[client_id].speed;
+			if (player_robot[client_id].shake <= -60.0f || player_robot[client_id].shake >= 60.0f)
+				player_robot[client_id].shake_dir *= -1;
+			if (player_robot[client_id].speed < 0.25f)
+				player_robot[client_id].speed += 0.001f;
 
 			// 골인 지점에 로봇이 들어왔는지 체크
-			if (collision(goal, player_robot.bb)) {
+			if (collision(goal, player_robot[client_id].bb)) {
 				finish_time = int(time(NULL));
-				player_robot.x = 0.0f, player_robot.z = 0.0f, player_robot.y = 0.0f, player_robot.y_radian = 0.0f, 
-					player_robot.shake = 0.0f, player_robot.shake_dir = 1;
-				player_robot.move = false;
+				player_robot[client_id].x = 0.0f, player_robot[client_id].z = 0.0f, player_robot[client_id].y = 0.0f, player_robot[client_id].y_radian = 0.0f,
+					player_robot[client_id].shake = 0.0f, player_robot[client_id].shake_dir = 1;
+				player_robot[client_id].move = false;
 				gameState = 2;
 				std::cout << finish_time - start_time << '\n';
 				std::cout << read_ten(finish_time - start_time) <<'\n';
 			}
 		}
-		if (player_robot.y < 0) {
-			player_robot.y -= player_robot.speed;
-			player_robot.speed += 0.01f;
+		if (player_robot[client_id].y < 0) {
+			player_robot[client_id].y -= player_robot[client_id].speed;
+			player_robot[client_id].speed += 0.01f;
 
-			if (player_robot.y < -5.f) {
-				player_robot.y_radian = 180.0f, player_robot.shake_dir = 0, player_robot.shake = false, player_robot.speed = 0.0f;
+			if (player_robot[client_id].y < -5.f) {
+				player_robot[client_id].y_radian = 180.0f, player_robot[client_id].shake_dir = 0, player_robot[client_id].shake = false, player_robot[client_id].speed = 0.0f;
 				if (client_id == 0) {
-					player_robot.x = -203, player_robot.z = 150, player_robot.y = 0.f;
+					player_robot[client_id].x = -203, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
 				}
 				else if (client_id == 1) {
-					player_robot.x = -201, player_robot.z = 150, player_robot.y = 0.f;
+					player_robot[client_id].x = -201, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
 				}
 				else if (client_id == 2) {
-					player_robot.x = -199, player_robot.z = 150, player_robot.y = 0.f;
+					player_robot[client_id].x = -199, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
 				}
-				player_robot.bb = get_bb(player_robot);
+				player_robot[client_id].bb = get_bb(player_robot[client_id]);
 			}
 		}
 
@@ -1578,18 +1577,18 @@ GLvoid TimerFunc(int x)
 					block_robot[i].x = 1.0f * ((i + 1) % 5) - 2.0f;
 					block_robot[i].z = -1.0f * ((i + 1) / 5);
 				}
-				block_robot[i].y_radian = atan2(player_robot.x - player_robot.x, player_robot.x - player_robot.x);
+				block_robot[i].y_radian = atan2(player_robot[client_id].x - player_robot[client_id].x, player_robot[client_id].x - player_robot[client_id].x);
 				block_robot[i].shake = 0.0f; block_robot[i].shake_dir = 1;
 			}
 			else {
-				if (player_robot.move && collision(block_robot[i].bb, player_robot.bb)) {
-					player_robot.move = false;
-					player_robot.x -= sin(glm::radians(player_robot.y_radian)) * player_robot.speed;
-					player_robot.z -= cos(glm::radians(player_robot.y_radian)) * player_robot.speed;
-					player_robot.speed = 0;
-					GLfloat radian = atan2(player_robot.x - block_robot[i].x, player_robot.z - block_robot[i].z);
-					player_robot.road[0][0] = block_robot[i].x, player_robot.road[0][1] = block_robot[i].z;
-					player_robot.road[1][0] = block_robot[i].x + 2.0f * sin(radian), player_robot.road[1][1] = block_robot[i].z + 2.0f * cos(radian);
+				if (player_robot[client_id].move && collision(block_robot[i].bb, player_robot[client_id].bb)) {
+					player_robot[client_id].move = false;
+					player_robot[client_id].x -= sin(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
+					player_robot[client_id].z -= cos(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
+					player_robot[client_id].speed = 0;
+					GLfloat radian = atan2(player_robot[client_id].x - block_robot[i].x, player_robot[client_id].z - block_robot[i].z);
+					player_robot[client_id].road[0][0] = block_robot[i].x, player_robot[client_id].road[0][1] = block_robot[i].z;
+					player_robot[client_id].road[1][0] = block_robot[i].x + 2.0f * sin(radian), player_robot[client_id].road[1][1] = block_robot[i].z + 2.0f * cos(radian);
 					glutTimerFunc(10, Bump, i);
 				}
 				else {
@@ -1606,16 +1605,16 @@ GLvoid TimerFunc(int x)
 					else
 						block_robot[i].y_radian += 180.0f;
 
-					if (player_robot.move && collision(block_robot[i].bb, player_robot.bb)) {
-						player_robot.move = false;
+					if (player_robot[client_id].move && collision(block_robot[i].bb, player_robot[client_id].bb)) {
+						player_robot[client_id].move = false;
 						block_robot[i].x -= sin(glm::radians(block_robot[i].y_radian)) * block_robot[i].speed;
 						block_robot[i].z -= cos(glm::radians(block_robot[i].y_radian)) * block_robot[i].speed;
-						player_robot.x -= sin(glm::radians(player_robot.y_radian)) * player_robot.speed;
-						player_robot.z -= cos(glm::radians(player_robot.y_radian)) * player_robot.speed;
-						player_robot.speed = 0;
-						GLfloat radian = atan2(player_robot.x - block_robot[i].x, player_robot.z - block_robot[i].z);
-						player_robot.road[0][0] = block_robot[i].x, player_robot.road[0][1] = block_robot[i].z;
-						player_robot.road[1][0] = block_robot[i].x + 2.0f * sin(radian), player_robot.road[1][1] = block_robot[i].z + 2.0f * cos(radian);
+						player_robot[client_id].x -= sin(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
+						player_robot[client_id].z -= cos(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
+						player_robot[client_id].speed = 0;
+						GLfloat radian = atan2(player_robot[client_id].x - block_robot[i].x, player_robot[client_id].z - block_robot[i].z);
+						player_robot[client_id].road[0][0] = block_robot[i].x, player_robot[client_id].road[0][1] = block_robot[i].z;
+						player_robot[client_id].road[1][0] = block_robot[i].x + 2.0f * sin(radian), player_robot[client_id].road[1][1] = block_robot[i].z + 2.0f * cos(radian);
 						glutTimerFunc(10, Bump, i);
 					}
 				}
@@ -1628,28 +1627,28 @@ GLvoid TimerFunc(int x)
 GLvoid Bump(int index)
 {
 	if (gameState == 1) {
-		if (collision(map_bb, player_robot.bb) || collision(map_bb2, player_robot.bb) || collision(map_bb3, player_robot.bb)) {
-			GLfloat radian = atan2(player_robot.road[1][0] - player_robot.road[0][0], player_robot.road[1][1] - player_robot.road[0][1]);
-			player_robot.x += sin(radian) * player_robot.speed;
-			player_robot.z += cos(radian) * player_robot.speed;
-			player_robot.bb = get_bb(player_robot);
+		if (collision(map_bb, player_robot[client_id].bb) || collision(map_bb2, player_robot[client_id].bb) || collision(map_bb3, player_robot[client_id].bb)) {
+			GLfloat radian = atan2(player_robot[client_id].road[1][0] - player_robot[client_id].road[0][0], player_robot[client_id].road[1][1] - player_robot[client_id].road[0][1]);
+			player_robot[client_id].x += sin(radian) * player_robot[client_id].speed;
+			player_robot[client_id].z += cos(radian) * player_robot[client_id].speed;
+			player_robot[client_id].bb = get_bb(player_robot[client_id]);
 		}
 		else {
-			player_robot.y -= 0.1f;
-			player_robot.speed = 0.0f;
+			player_robot[client_id].y -= 0.1f;
+			player_robot[client_id].speed = 0.0f;
 		}
 
-		if (player_robot.speed < 0.25f)
-			player_robot.speed += 0.001f;
+		if (player_robot[client_id].speed < 0.25f)
+			player_robot[client_id].speed += 0.001f;
 
-		glm::vec2 road_spots = glm::vec2(player_robot.road[0][0], player_robot.road[0][1]);
-		glm::vec2 player_spots = glm::vec2(player_robot.x, player_robot.z);
+		glm::vec2 road_spots = glm::vec2(player_robot[client_id].road[0][0], player_robot[client_id].road[0][1]);
+		glm::vec2 player_spots = glm::vec2(player_robot[client_id].x, player_robot[client_id].z);
 
-		if (player_robot.y < 0.0f);
+		if (player_robot[client_id].y < 0.0f);
 		else if (index < 19 && glm::distance(road_spots, player_spots) < 2.0f)
 			glutTimerFunc(10, Bump, index);
 		else
-			player_robot.move = true;
+			player_robot[client_id].move = true;
 	}
 }
 
