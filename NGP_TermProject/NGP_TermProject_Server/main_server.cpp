@@ -19,9 +19,10 @@ typedef struct player_packet {
 	bool move = false; // 움직이고 있는지(대기 후 이동)
 };
 
-player_packet player_collision();
+//player_packet player_collision();
 
 HANDLE hKeyEvent, hGameStartEvent;
+HANDLE hReadEvent[MAX_PLAYER], hWriteEvent[MAX_PLAYER];
 
 void send_collision_packet();
 void send_goal_packet();
@@ -31,7 +32,7 @@ DWORD WINAPI main_thread(LPVOID arg)
 {
 	SOCKET sock = (SOCKET)arg;
 	char buf[BUFSIZE + 1];
-	int retval, out=1;
+	int retval, out = 1, client_id = -1;
 
 	WaitForSingleObject(hGameStartEvent, INFINITE);
 
@@ -43,9 +44,36 @@ DWORD WINAPI main_thread(LPVOID arg)
 
 	printf("[Thread] 클라이언트 스레드 시작\n");
 
+	// 클라이언트 ID값 수신
+	retval = recv(sock, (char*)&client_id, sizeof(int), 0);
+	if (retval == SOCKET_ERROR) {
+		err_display("send()");
+	}
+	printf("[Thread] 클라이언트 ID(client_%d) 수신 완료\n", client_id);
+
 	//-- 데이터 통신 --
 	while (out) {
+		//WaitForSingleObject(hReadEvent[client_id], INFINITE);
 
+		// recv() 플레이어 정보 받기 - Robot
+		//retval = recv(sock, (char*)&player_robot[client_id], sizeof(Robot), 0);
+		//if (retval == SOCKET_ERROR) {
+		//	err_display("send()");
+		//	break;
+		//}
+		//SetEvent(hWriteEvent[client_id]);
+		
+		// Robot 업데이트 대기
+		//WaitForMultipleObjects(MAX_PLAYER, hWriteEvent, TRUE, INFINITE);
+
+		// send() 플레이어 정보 보내기 - Robot[3]
+		//for (int i = 0; i < MAX_PLAYER; i++) {
+		//	retval = send(sock, (char*)&player_robot[i], sizeof(Robot), 0);
+		//	if (retval == SOCKET_ERROR) {
+		//		err_display("send()");
+		//		break;
+		//	}
+		//}
 	}
 
 	closesocket(sock);
@@ -133,6 +161,8 @@ int main(int argc, char* argv[])
 			CloseHandle(hThread);
 		else
 			closesocket(client_sock);
+		hReadEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
+		hWriteEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 		// client sock count 증가
 		client_sock_count++;
@@ -141,6 +171,10 @@ int main(int argc, char* argv[])
 	// 이벤트 핸들 닫기
 	CloseHandle(hKeyEvent);
 	CloseHandle(hGameStartEvent);
+	for(int i=0; i< MAX_PLAYER; i++) {
+		CloseHandle(hReadEvent[i]);
+		CloseHandle(hWriteEvent[i]);
+	}
 
 	// 소켓 닫기
 	closesocket(listen_sock);

@@ -31,7 +31,7 @@ struct Robot {
 	int shake_dir{}, dir{};
 	bool move = false; // 움직이고 있는지(대기 후 이동)
 };
-Robot player_robot[3], block_robot[19];
+Robot player_robot[MAX_PLAYER], block_robot[19];
 int CountDown = 0;
 GLfloat start_location[MAX_PLAYER][3]{
 	-203.f, 0.f, 150.f,
@@ -48,8 +48,8 @@ GLvoid TimerFunc(int x);
 GLvoid Bump(int index);
 
 //DWORD WINAPI client_key_thread(LPVOID arg);
-//
-//bool interaction_player_status();
+
+bool interaction_player_status();
 //void interaction_result();
 //int interaction_count();
 //
@@ -280,7 +280,8 @@ int gameState = 0;		// 0: 타이틀, 1: 본게임, 2:엔딩
 int client_id = -1;		// 클라이언트 ID
 GLuint titleTexture;	// 타이틀 배경 BMP
 
-SOCKET sock, server_sock;
+struct sockaddr_in serveraddr;
+SOCKET sock;
 
 int main(int argc, char** argv)
 {
@@ -446,7 +447,7 @@ void InitBuffer()
 
 		block_robot[6].road[0][0] = -195,	block_robot[6].road[0][1] = -153;
 		block_robot[6].road[1][0] = -195,	block_robot[6].road[1][1] = -147;
-		
+
 		block_robot[7].road[0][0] = 200,	block_robot[7].road[0][1] = -150;
 		block_robot[7].road[1][0] = 190,	block_robot[7].road[1][1] = -150;
 
@@ -461,7 +462,7 @@ void InitBuffer()
 
 		block_robot[11].road[0][0] = 196,	block_robot[11].road[0][1] = -148;
 		block_robot[11].road[1][0] = -196,	block_robot[11].road[1][1] = -148;
-		//
+		
 		block_robot[12].road[0][0] = 198,	block_robot[12].road[0][1] = -110;
 		block_robot[12].road[1][0] = 204,	block_robot[12].road[1][1] = -110;
 
@@ -497,7 +498,6 @@ void InitBuffer()
 			block_robot[i].y_radian = 180.0f;
 	}
 	player_robot[client_id].bb = get_bb(player_robot[client_id]);
-	start_time = int(time(NULL));
 }
 void InitTextures() 
 {
@@ -692,10 +692,9 @@ void InitTextures()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, data17);
 }
 
-
 GLfloat camera_move[3]{ 0.0f, 2.0f, 2.5f }, camera_look[3]{ 0.0f, 0.5f, 0.0f }, light_pos[3]{ 0.0f, 2.0f, 2.0f }, camera_radian = 0.0f;
 int end_anime;
-BB map_bb{ -204.0f,-153.f,-198.f,151.f }, map_bb2{ -204.f,-153.f,204.f,-147.f }, map_bb3{ 198.0f,-153.f,204.f,151.f }, goal{198.f,149.f,204.f,151.f};
+BB map_bb{ -204.0f,-153.f,-198.f,151.f }, map_bb2{ -204.f,-153.f,204.f,-147.f }, map_bb3{ 198.0f,-153.f,204.f,151.f }, goal{ 198.f,149.f,204.f,151.f };
 
 GLvoid drawScene()
 {
@@ -727,7 +726,6 @@ GLvoid drawScene()
 		glDrawArrays(GL_QUADS, 0, 4);
 
 	}
-
 	//그냥 맵===================================================================================================================================================================================
 	else if (gameState == 1) {
 		glViewport(0, 0, background_width, background_height);
@@ -1405,7 +1403,6 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			if (sock == INVALID_SOCKET) err_quit("socket()");
 
 			// connect()
-			struct sockaddr_in serveraddr;
 			memset(&serveraddr, 0, sizeof(serveraddr));
 			serveraddr.sin_family = AF_INET;
 			inet_pton(AF_INET, SERVERIP, &serveraddr.sin_addr);
@@ -1436,6 +1433,14 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			if (strcmp(buf, "GAME_START") == 0) {
 				printf("[클라이언트] 게임 시작 패킷 수신\n");
 				gameState = 1;
+			}
+
+			start_time = int(time(NULL));
+
+			// 클라이언트 ID값 전송
+			retval = send(sock, (char*)&client_id, sizeof(int), 0);
+			if (retval == SOCKET_ERROR) {
+				err_display("send()");
 			}
 
 			break;
@@ -1473,12 +1478,12 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			break;
 		}
 	}
-	
+
 	glutPostRedisplay();
 }
 GLvoid SpecialKeyBoard(int key, int x, int y)
 {
-	if (gameState == 1){
+	if (gameState == 1) {
 		switch (key) {
 		case GLUT_KEY_LEFT:
 			player_robot[client_id].y_radian += 45.0f;
@@ -1529,7 +1534,7 @@ GLvoid TimerFunc(int x)
 				player_robot[client_id].z += cos(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
 				player_robot[client_id].bb = get_bb(player_robot[client_id]);
 			}
-			else {
+			else {	// 떨어짐
 				player_robot[client_id].y -= 0.1f;
 				player_robot[client_id].speed = 0.0f;
 				player_robot[client_id].move = false;
@@ -1548,7 +1553,7 @@ GLvoid TimerFunc(int x)
 				player_robot[client_id].move = false;
 				gameState = 2;
 				std::cout << finish_time - start_time << '\n';
-				std::cout << read_ten(finish_time - start_time) <<'\n';
+				std::cout << read_ten(finish_time - start_time) << '\n';
 			}
 		}
 		if (player_robot[client_id].y < 0) {
@@ -1657,13 +1662,25 @@ GLvoid Bump(int index)
 
 //DWORD WINAPI client_key_thread(LPVOID arg)
 //{
-//	
-//}
-//
-//bool interaction_player_status()
-//{
 //
 //}
+
+bool interaction_player_status()
+{
+	// 플레이어 정보 send()
+	int retval = send(sock, (char*)&player_robot[client_id], sizeof(Robot), 0);
+	if (retval == SOCKET_ERROR) {
+		err_display("send()");
+	}
+
+	// 나머지 플레이어 정보 받기 recv()
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		retval = send(sock, (char*)&player_robot[i], sizeof(Robot), 0);
+		if (retval == SOCKET_ERROR) {
+			err_display("send()");
+		}
+	}
+}
 //void interaction_result()
 //{
 //
