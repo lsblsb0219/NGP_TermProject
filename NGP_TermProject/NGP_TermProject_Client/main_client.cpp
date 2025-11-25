@@ -16,6 +16,8 @@ char* SERVERIP = (char*)"127.0.0.1";
 #define SERVERPORT 9000
 #define BUFSIZE    512
 
+#define MAX_PLAYER 3
+
 typedef struct Bounding_Box {
 	GLfloat x1, z1, x2, z2;
 }BB;
@@ -31,6 +33,10 @@ struct Robot {
 };
 Robot player_robot[3], block_robot[19];
 int CountDown = 0;
+GLfloat start_location[MAX_PLAYER][3]{
+	-203.f, 0.f, 150.f,
+	-201.f, 0.f, 150.f,
+	-199.f, 0.f, 150.f, };
 
 HANDLE hThread;
 
@@ -768,7 +774,7 @@ GLvoid drawScene()
 		glUniform1i(indexLocation, 0);
 
 		/*여기에 로봇*/
-		for (int i = 0; i < 3; ++i)
+		for (int i = 0; i < MAX_PLAYER; ++i)
 			drawRobot(axisTransForm, modelLocation, player_robot[i]);	// 플레이어 2, 3
 		/*이건 장애물 로봇*/
 		glUniform3f(objColorLocation, 1.0f, 1.0f, 1.0f);
@@ -1411,13 +1417,10 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			printf("서버 접속 성공! GAME_START 대기...\n");
 			retval = recv(sock, (char*)&client_id, sizeof(int), 0);
 			if (client_id == SOCKET_ERROR) err_quit("recv()");
-			else if (client_id == 0) {
-				player_robot[client_id].x = -203, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
-			}else if(client_id == 1){
-				player_robot[client_id].x = -201, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
-			}
-			else if (client_id == 2) {
-				player_robot[client_id].x = -199, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
+			else {
+				player_robot[client_id].x = start_location[client_id][0];
+				player_robot[client_id].y = start_location[client_id][1];
+				player_robot[client_id].z = start_location[client_id][2];
 			}
 
 			// GAME_START 수신
