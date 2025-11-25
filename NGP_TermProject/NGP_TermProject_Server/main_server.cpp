@@ -112,6 +112,8 @@ int main(int argc, char* argv[])
 			err_display("accept()");
 			break;
 		}
+		
+		send(client_sock, (char*)&client_sock_count, sizeof(int), 0);
 
 		// 소켓 배열에 저장
 		client_socks[client_sock_count] = client_sock;
@@ -163,7 +165,7 @@ void sent_start_packet()
 
 }
 
-player_packet player_collision()
-{
-
-}
+//player_packet player_collision()
+//{
+//	
+//}

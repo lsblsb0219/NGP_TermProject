@@ -12,7 +12,7 @@
 
 #include "..\Common.h"
 
-char* SERVERIP = (char*)"192.168.78.234";
+char* SERVERIP = (char*)"127.0.0.1";
 #define SERVERPORT 9000
 #define BUFSIZE    512
 
@@ -270,6 +270,7 @@ unsigned int texture_runmap[17];
 BITMAPINFO* bmp;
 
 int gameState = 0;		// 0: 타이틀, 1: 본게임, 2:엔딩
+int client_id = -1;		// 클라이언트 ID
 GLuint titleTexture;	// 타이틀 배경 BMP
 
 SOCKET sock, server_sock;
@@ -416,7 +417,7 @@ void InitBuffer()
 
 	player_robot.move = false;
 	player_robot.y_radian = 180.0f, player_robot.shake_dir = 1;
-	player_robot.x = -201, player_robot.z = 150, player_robot.y=0.f;
+	player_robot.x = -201, player_robot.z = 150, player_robot.y = 0.f;
 	{
 		block_robot[0].road[0][0] = -203,	block_robot[0].road[0][1] = 140;
 		block_robot[0].road[1][0] = -203,	block_robot[0].road[1][1] = -150;
@@ -1465,6 +1466,16 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			if (retval == SOCKET_ERROR) err_quit("connect()");
 
 			printf("서버 접속 성공! GAME_START 대기...\n");
+			retval = recv(sock, (char*)&client_id, sizeof(int), 0);
+			if (client_id == SOCKET_ERROR) err_quit("recv()");
+			else if (client_id == 0) {
+				player_robot.x = -203, player_robot.z = 150, player_robot.y = 0.f;
+			}else if(client_id == 1){
+				player_robot.x = -201, player_robot.z = 150, player_robot.y = 0.f;
+			}
+			else if (client_id == 2) {
+				player_robot.x = -199, player_robot.z = 150, player_robot.y = 0.f;
+			}
 
 			// GAME_START 수신
 			char buf[256];
@@ -1487,7 +1498,7 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 	else if (gameState == 1) {
 		switch (key) {
 		case 'm':
-			if (gameState == 1 && CountDown == 0) {
+			if (CountDown == 0) {
 				if (player_robot.move)
 					player_robot.move = false;
 				else
@@ -1497,15 +1508,20 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			}
 			break;
 		case't':
-			if (gameState == 1)
-				player_robot.x = 201, player_robot.z = 140, player_robot.y = 0.f, player_robot.y_radian = 0.0f;
+			// [테스트용] 결승점 앞으로 텔포
+			player_robot.x = 201, player_robot.z = 140, player_robot.y = 0.f, player_robot.y_radian = 0.0f;
 			break;
+		default:
+			break;
+		}
+	}
+	else if (gameState == 2) {
+		switch (key)
+		{
 		case 'q':
-			if (gameState == 2) {
-				glutLeaveMainLoop();
-				//closesocket(sock);
-				WSACleanup();
-			}
+			glutLeaveMainLoop();
+			closesocket(sock);
+			WSACleanup();
 			break;
 		default:
 			break;
@@ -1516,17 +1532,17 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 }
 GLvoid SpecialKeyBoard(int key, int x, int y)
 {
-	switch (key) {
-	case GLUT_KEY_LEFT:
-		if (gameState == 1)
+	if (gameState == 1){
+		switch (key) {
+		case GLUT_KEY_LEFT:
 			player_robot.y_radian += 45.0f;
-		break;
-	case GLUT_KEY_RIGHT:
-		if (gameState == 1)
+			break;
+		case GLUT_KEY_RIGHT:
 			player_robot.y_radian -= 45.0f;
-		break;
-	default:
-		break;
+			break;
+		default:
+			break;
+		}
 	}
 	glutPostRedisplay();
 }
@@ -1595,8 +1611,15 @@ GLvoid TimerFunc(int x)
 
 			if (player_robot.y < -5.f) {
 				player_robot.y_radian = 180.0f, player_robot.shake_dir = 0, player_robot.shake = false, player_robot.speed = 0.0f;
-				// 부활 위치 조정 필요 
-				player_robot.x = -201, player_robot.z = 150, player_robot.y = 0.f;
+				if (client_id == 0) {
+					player_robot.x = -203, player_robot.z = 150, player_robot.y = 0.f;
+				}
+				else if (client_id == 1) {
+					player_robot.x = -201, player_robot.z = 150, player_robot.y = 0.f;
+				}
+				else if (client_id == 2) {
+					player_robot.x = -199, player_robot.z = 150, player_robot.y = 0.f;
+				}
 				player_robot.bb = get_bb(player_robot);
 			}
 		}
