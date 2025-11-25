@@ -22,8 +22,9 @@ typedef struct Bounding_Box {
 	GLfloat x1, z1, x2, z2;
 }BB;
 
+#pragma pack(1)
 struct Robot {
-	GLfloat size{}, x{}, z{}, road[2][2]{},
+	GLfloat x{}, z{}, road[2][2]{},
 		speed = 0.0f,
 		shake = 1, y_radian = 180.0f, // shake = (발,다리)회전 각도, radian = 몸 y축 회전 각도
 		y{};
@@ -31,7 +32,9 @@ struct Robot {
 	int shake_dir{}, dir{};
 	bool move = false; // 움직이고 있는지(대기 후 이동)
 };
-Robot player_robot[MAX_PLAYER], block_robot[19];
+#pragma pack()
+Robot player_robot[MAX_PLAYER];
+Robot block_robot[19];
 int CountDown = 0;
 GLfloat start_location[MAX_PLAYER][3]{
 	-203.f, 0.f, 150.f,
@@ -39,6 +42,7 @@ GLfloat start_location[MAX_PLAYER][3]{
 	-199.f, 0.f, 150.f, };
 
 HANDLE hThread;
+HANDLE hStartEvent, hWriteEvent;
 
 GLvoid drawScene();
 GLvoid KeyBoard(unsigned char key, int x, int y);
@@ -48,8 +52,8 @@ GLvoid TimerFunc(int x);
 GLvoid Bump(int index);
 
 //DWORD WINAPI client_key_thread(LPVOID arg);
+DWORD WINAPI client_main_thread(LPVOID arg);
 
-bool interaction_player_status();
 //void interaction_result();
 //int interaction_count();
 //
@@ -310,6 +314,8 @@ int main(int argc, char** argv)
 	shaderID = make_shaderProgram();
 	InitBuffer();
 	InitTextures();
+
+	hStartEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 	glutKeyboardFunc(KeyBoard);
 	glutSpecialFunc(SpecialKeyBoard);
@@ -1411,6 +1417,11 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			int retval = connect(sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
 			if (retval == SOCKET_ERROR) err_quit("connect()");
 
+			// 쓰레드 생성
+			HANDLE hThread = CreateThread(NULL, 0, client_main_thread, (LPVOID)sock, 0, NULL);
+			if (hThread != NULL) { CloseHandle(hThread); }
+			else { closesocket(sock); }
+
 			printf("서버 접속 성공! GAME_START 대기...\n");
 			retval = recv(sock, (char*)&client_id, sizeof(int), 0);
 			if (client_id == SOCKET_ERROR) err_quit("recv()");
@@ -1442,6 +1453,8 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			if (retval == SOCKET_ERROR) {
 				err_display("send()");
 			}
+
+			SetEvent(hStartEvent);
 
 			break;
 		}
@@ -1630,6 +1643,7 @@ GLvoid TimerFunc(int x)
 		}
 	}
 	glutTimerFunc(10, TimerFunc, 1);
+	SetEvent(hWriteEvent);
 	glutPostRedisplay();
 }
 GLvoid Bump(int index)
@@ -1665,22 +1679,37 @@ GLvoid Bump(int index)
 //
 //}
 
-bool interaction_player_status()
+DWORD WINAPI client_main_thread(LPVOID arg)
 {
-	// 플레이어 정보 send()
-	int retval = send(sock, (char*)&player_robot[client_id], sizeof(Robot), 0);
-	if (retval == SOCKET_ERROR) {
-		err_display("send()");
-	}
+	SOCKET sock = (SOCKET)arg;
+	int retval;
 
-	// 나머지 플레이어 정보 받기 recv()
-	for (int i = 0; i < MAX_PLAYER; ++i) {
-		retval = send(sock, (char*)&player_robot[i], sizeof(Robot), 0);
+	WaitForSingleObject(hStartEvent, INFINITE);
+
+	while (1) {
+		WaitForSingleObject(hWriteEvent, INFINITE);
+		// 플레이어 정보 send()
+		retval = send(sock, (char*)&player_robot[client_id], sizeof(player_robot[client_id]), 0);
 		if (retval == SOCKET_ERROR) {
 			err_display("send()");
+			break;
 		}
+
+		// 나머지 플레이어 정보 받기 recv()
+		for (int i = 0; i < MAX_PLAYER; ++i) {
+			retval = recv(sock, (char*)&player_robot[i], sizeof(player_robot[i]), 0);
+			if (retval == SOCKET_ERROR) {
+				err_display("recv()");
+				break;
+			}
+		}
+		ResetEvent(hWriteEvent);
 	}
+	printf("[Thread] 클라이언트 스레드 종료\n");
+
+	return 0;
 }
+
 //void interaction_result()
 //{
 //

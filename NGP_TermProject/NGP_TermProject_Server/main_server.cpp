@@ -9,17 +9,21 @@ typedef struct Bounding_Box {
 	float x1, z1, x2, z2;
 }BB;
 
+#pragma pack(1)
 typedef struct player_packet {
-	float size{}, x{}, z{}, road[2][2]{},
+	float x{}, z{}, road[2][2]{},
 		speed = 0.0f,
 		shake = 1, y_radian = 180.0f, // shake = (발,다리)회전 각도, radian = 몸 y축 회전 각도
 		y{};
 	BB bb{}; //왼쪽 상단, 오른쪽 하단
 	int shake_dir{}, dir{};
 	bool move = false; // 움직이고 있는지(대기 후 이동)
-};
+}Robot;
+#pragma pack()
+player_packet player_robot[MAX_PLAYER];
+player_packet block_robot[19];
 
-//player_packet player_collision();
+void player_collision(int id);
 
 HANDLE hKeyEvent, hGameStartEvent;
 HANDLE hReadEvent[MAX_PLAYER], hWriteEvent[MAX_PLAYER];
@@ -51,29 +55,31 @@ DWORD WINAPI main_thread(LPVOID arg)
 	}
 	printf("[Thread] 클라이언트 ID(client_%d) 수신 완료\n", client_id);
 
-	//-- 데이터 통신 --
 	while (out) {
-		//WaitForSingleObject(hReadEvent[client_id], INFINITE);
-
 		// recv() 플레이어 정보 받기 - Robot
-		//retval = recv(sock, (char*)&player_robot[client_id], sizeof(Robot), 0);
-		//if (retval == SOCKET_ERROR) {
-		//	err_display("send()");
-		//	break;
-		//}
-		//SetEvent(hWriteEvent[client_id]);
-		
+		retval = recv(sock, (char*)&player_robot[client_id], sizeof(player_robot[client_id]), 0);
+		if (retval == SOCKET_ERROR) {
+			err_display("recv()");
+			break;
+		}
+		SetEvent(hWriteEvent[client_id]);
+
+		player_collision(client_id);
+
 		// Robot 업데이트 대기
-		//WaitForMultipleObjects(MAX_PLAYER, hWriteEvent, TRUE, INFINITE);
+		WaitForMultipleObjects(MAX_PLAYER, hReadEvent, TRUE, INFINITE);
+		ResetEvent(hWriteEvent[client_id]);
 
 		// send() 플레이어 정보 보내기 - Robot[3]
-		//for (int i = 0; i < MAX_PLAYER; i++) {
-		//	retval = send(sock, (char*)&player_robot[i], sizeof(Robot), 0);
-		//	if (retval == SOCKET_ERROR) {
-		//		err_display("send()");
-		//		break;
-		//	}
-		//}
+		for (int i = 0; i < MAX_PLAYER; i++) {
+			retval = send(sock, (char*)&player_robot[i], sizeof(player_robot[i]), 0);
+			if (retval == SOCKET_ERROR) {
+				err_display("send()");
+				break;
+			}
+		}
+		
+		ResetEvent(hReadEvent[client_id]);
 	}
 
 	closesocket(sock);
@@ -86,7 +92,6 @@ DWORD WINAPI server_key_thread(LPVOID arg)
 {
 
 }
-
 
 int main(int argc, char* argv[])
 {
@@ -138,7 +143,7 @@ int main(int argc, char* argv[])
 			else
 				continue;
 		}
-				
+		
 		// accept()
 		addrlen = sizeof(clientaddr);
 		client_sock = accept(listen_sock, (struct sockaddr*)&clientaddr, &addrlen);
@@ -197,7 +202,10 @@ void sent_start_packet()
 
 }
 
-//player_packet player_collision()
-//{
-//	
-//}
+void player_collision(int id)
+{
+	WaitForMultipleObjects(MAX_PLAYER, hWriteEvent, TRUE, INFINITE);
+	//충돌 체크
+
+	SetEvent(hReadEvent[id]);
+}
