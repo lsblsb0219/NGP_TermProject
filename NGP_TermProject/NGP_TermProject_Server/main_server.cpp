@@ -19,6 +19,10 @@ typedef struct player_packet {
 	bool move = false; // 움직이고 있는지(대기 후 이동)
 };
 
+player_packet player_collision();
+
+HANDLE hKeyEvent, hGameStartEvent;
+
 void send_collision_packet();
 void send_goal_packet();
 void sent_start_packet();
@@ -27,32 +31,21 @@ DWORD WINAPI main_thread(LPVOID arg)
 {
 	SOCKET sock = (SOCKET)arg;
 	char buf[BUFSIZE + 1];
-	int retval;
+	int retval, out=1;
+
+	WaitForSingleObject(hGameStartEvent, INFINITE);
+
+	// 게임 시작 패킷 전송
+	const char* gameStartMsg = "GAME_START";
+
+	send(sock, gameStartMsg, strlen(gameStartMsg), 0);
+	printf("[TCP 서버] GAME_START 패킷 전송 완료\n");
 
 	printf("[Thread] 클라이언트 스레드 시작\n");
 
-	while (1)
-	{
-		// recv()
-		retval = recv(sock, buf, BUFSIZE, 0);
-		if (retval == SOCKET_ERROR) {
-			err_display("recv()");
-			break;
-		}
-		else if (retval == 0) {
-			printf("[Thread] 클라이언트 종료 요청\n");
-			break;
-		}
+	//-- 데이터 통신 --
+	while (out) {
 
-		buf[retval] = '\0';
-		printf("[Thread] 수신 데이터: %s\n", buf);
-
-		// echo send() - 받은 걸 그대로 클라에 돌려줌
-		retval = send(sock, buf, retval, 0);
-		if (retval == SOCKET_ERROR) {
-			err_display("send()");
-			break;
-		}
 	}
 
 	closesocket(sock);
@@ -66,9 +59,6 @@ DWORD WINAPI server_key_thread(LPVOID arg)
 
 }
 
-player_packet player_collision();
-
-HANDLE hKeyEvent;
 
 int main(int argc, char* argv[])
 {
@@ -98,6 +88,7 @@ int main(int argc, char* argv[])
 
 	// CreateEvent()
 	hKeyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	hGameStartEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 	// 데이터 통신에 사용할 변수
 	SOCKET client_sock, client_socks[MAX_PLAYER];
@@ -108,7 +99,18 @@ int main(int argc, char* argv[])
 	// 클라이언트 접속 수
 	int client_sock_count = 0;
 
-	while (client_sock_count < MAX_PLAYER) {
+	while (1) {
+		// 최대 접속 인원 수 제한
+		if (client_sock_count >= MAX_PLAYER) {
+			if (WaitForSingleObject(hGameStartEvent, 0)) {
+				printf("\n3명 접속 완료\n");
+				SetEvent(hGameStartEvent);
+				continue;
+			}
+			else
+				continue;
+		}
+				
 		// accept()
 		addrlen = sizeof(clientaddr);
 		client_sock = accept(listen_sock, (struct sockaddr*)&clientaddr, &addrlen);
@@ -116,37 +118,29 @@ int main(int argc, char* argv[])
 			err_display("accept()");
 			break;
 		}
-		
-		send(client_sock, (char*)&client_sock_count, sizeof(int), 0);
-
-		// 소켓 배열에 저장
-		client_socks[client_sock_count] = client_sock;
-		client_sock_count++;
-
 		// 접속한 클라이언트 정보 출력
 		char addr[INET_ADDRSTRLEN];
 		inet_ntop(AF_INET, &clientaddr.sin_addr, addr, sizeof(addr));
 		printf("\n[TCP 서버] 클라이언트 접속: IP 주소=%s, 포트 번호=%d\n",
 			addr, ntohs(clientaddr.sin_port));
-		
+
+		// 클라이언트에 ID값 전송
+		send(client_sock, (char*)&client_sock_count, sizeof(int), 0);
+
 		// 쓰레드 생성
 		HANDLE hThread = CreateThread(NULL, 0, main_thread, (LPVOID)client_sock, 0, NULL);
 		if (hThread != NULL)
 			CloseHandle(hThread);
 		else
 			closesocket(client_sock);
+
+		// client sock count 증가
+		client_sock_count++;
 	}
-
-	printf("\n3명 접속 완료\n");
-
-	// 게임 시작 패킷 전송
-	const char* gameStartMsg = "GAME_START";
-
-	for (int i = 0; i < MAX_PLAYER; i++) {
-		send(client_socks[i], gameStartMsg, strlen(gameStartMsg), 0);
-	}
-
-	printf("[TCP 서버] GAME_START 패킷 전송 완료\n");
+	
+	// 이벤트 핸들 닫기
+	CloseHandle(hKeyEvent);
+	CloseHandle(hGameStartEvent);
 
 	// 소켓 닫기
 	closesocket(listen_sock);
