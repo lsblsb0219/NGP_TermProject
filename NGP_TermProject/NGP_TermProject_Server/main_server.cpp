@@ -88,10 +88,10 @@ DWORD WINAPI main_thread(LPVOID arg)
 	return 0;
 }
 
-DWORD WINAPI server_key_thread(LPVOID arg)
-{
-
-}
+//DWORD WINAPI server_key_thread(LPVOID arg)
+//{
+//
+//}
 
 int main(int argc, char* argv[])
 {

@@ -429,9 +429,6 @@ void InitBuffer()
 	//--- attribute 인덱스 1번을 사용 가능하게 함.
 	glEnableVertexAttribArray(2);
 
-	player_robot[client_id].move = false;
-	player_robot[client_id].y_radian = 180.0f, player_robot[client_id].shake_dir = 1;
-	player_robot[client_id].x = -201, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
 	{
 		block_robot[0].road[0][0] = -203,	block_robot[0].road[0][1] = 140;
 		block_robot[0].road[1][0] = -203,	block_robot[0].road[1][1] = -150;
@@ -503,7 +500,6 @@ void InitBuffer()
 		if (block_robot[i].road[0][1] > block_robot[i].road[1][1])
 			block_robot[i].y_radian = 180.0f;
 	}
-	player_robot[client_id].bb = get_bb(player_robot[client_id]);
 }
 void InitTextures() 
 {
@@ -1426,9 +1422,12 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			retval = recv(sock, (char*)&client_id, sizeof(int), 0);
 			if (client_id == SOCKET_ERROR) err_quit("recv()");
 			else {
+				player_robot[client_id].move = false;
+				player_robot[client_id].y_radian = 180.0f, player_robot[client_id].shake_dir = 1;
 				player_robot[client_id].x = start_location[client_id][0];
 				player_robot[client_id].y = start_location[client_id][1];
 				player_robot[client_id].z = start_location[client_id][2];
+				player_robot[client_id].bb = get_bb(player_robot[client_id]);
 			}
 
 			// GAME_START 수신
