@@ -27,7 +27,6 @@ player_packet block_robot[19];
 void player_collision(int id);
 
 HANDLE hKeyEvent, hGameStartEvent;
-// HANDLE hReadEvent[MAX_PLAYER], hWriteEvent[MAX_PLAYER];
 
 void send_collision_packet();
 void send_goal_packet();
