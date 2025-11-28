@@ -20,24 +20,30 @@ typedef struct player_packet {
 	bool move = false; // 움직이고 있는지(대기 후 이동)
 }Robot;
 #pragma pack()
+
 player_packet player_robot[MAX_PLAYER];
 player_packet block_robot[19];
 
 void player_collision(int id);
 
 HANDLE hKeyEvent, hGameStartEvent;
-HANDLE hReadEvent[MAX_PLAYER], hWriteEvent[MAX_PLAYER];
+// HANDLE hReadEvent[MAX_PLAYER], hWriteEvent[MAX_PLAYER];
 
 void send_collision_packet();
 void send_goal_packet();
 void sent_start_packet();
 
+// 클라이언트 접속 수
+int client_sock_count = 0;
+
 DWORD WINAPI main_thread(LPVOID arg)
 {
 	SOCKET sock = (SOCKET)arg;
 	char buf[BUFSIZE + 1];
-	int retval, out = 1, client_id = -1;
+	int retval, client_id = -1;
+	// int out = 1;
 
+	// 게임 시작 대기
 	WaitForSingleObject(hGameStartEvent, INFINITE);
 
 	// 게임 시작 패킷 전송
@@ -55,20 +61,16 @@ DWORD WINAPI main_thread(LPVOID arg)
 	}
 	printf("[Thread] 클라이언트 ID(client_%d) 수신 완료\n", client_id);
 
-	while (out) {
+	while (1) {
 		// recv() 플레이어 정보 받기 - Robot
 		retval = recv(sock, (char*)&player_robot[client_id], sizeof(player_robot[client_id]), 0);
 		if (retval == SOCKET_ERROR) {
 			err_display("recv()");
 			break;
 		}
-		SetEvent(hWriteEvent[client_id]);
 
+		// 충돌 검사
 		player_collision(client_id);
-
-		// Robot 업데이트 대기
-		WaitForMultipleObjects(MAX_PLAYER, hReadEvent, TRUE, INFINITE);
-		ResetEvent(hWriteEvent[client_id]);
 
 		// send() 플레이어 정보 보내기 - Robot[3]
 		for (int i = 0; i < MAX_PLAYER; i++) {
@@ -79,11 +81,11 @@ DWORD WINAPI main_thread(LPVOID arg)
 			}
 		}
 		
-		ResetEvent(hReadEvent[client_id]);
 	}
 
 	closesocket(sock);
 	printf("[Thread] 클라이언트 스레드 종료\n");
+	client_sock_count -= 1;
 
 	return 0;
 }
@@ -130,7 +132,7 @@ int main(int argc, char* argv[])
 	char buf[BUFSIZE + 1];
 
 	// 클라이언트 접속 수
-	int client_sock_count = 0;
+	client_sock_count = 0;
 
 	while (1) {
 		// 최대 접속 인원 수 제한
@@ -162,13 +164,9 @@ int main(int argc, char* argv[])
 
 		// 쓰레드 생성
 		HANDLE hThread = CreateThread(NULL, 0, main_thread, (LPVOID)client_sock, 0, NULL);
-		if (hThread != NULL)
+		if (hThread)
 			CloseHandle(hThread);
-		else
-			closesocket(client_sock);
-		hReadEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
-		hWriteEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
-
+		
 		// client sock count 증가
 		client_sock_count++;
 	}
@@ -176,10 +174,6 @@ int main(int argc, char* argv[])
 	// 이벤트 핸들 닫기
 	CloseHandle(hKeyEvent);
 	CloseHandle(hGameStartEvent);
-	for(int i=0; i< MAX_PLAYER; i++) {
-		CloseHandle(hReadEvent[i]);
-		CloseHandle(hWriteEvent[i]);
-	}
 
 	// 소켓 닫기
 	closesocket(listen_sock);
@@ -204,8 +198,40 @@ void sent_start_packet()
 
 void player_collision(int id)
 {
-	WaitForMultipleObjects(MAX_PLAYER, hWriteEvent, TRUE, INFINITE);
-	//충돌 체크
+	// 방어 코드: 잘못된 id면 무시
+	if (id < 0 || id >= MAX_PLAYER)
+		return;
 
-	SetEvent(hReadEvent[id]);
+	BB my = player_robot[id].bb;
+
+	for (int i = 0; i < MAX_PLAYER; ++i)
+	{
+		if (i == id) continue;
+
+		BB other = player_robot[i].bb;
+
+		// 아직 접속 안 했거나 초기값일 수 있는 슬롯 스킵
+		if (other.x1 == 0.0f && other.x2 == 0.0f &&
+			other.z1 == 0.0f && other.z2 == 0.0f)
+			continue;
+
+		// AABB 충돌 판정
+		bool overlap =
+			!(my.x2 < other.x1 || my.x1 > other.x2 ||
+				my.z2 < other.z1 || my.z1 > other.z2);
+
+		if (overlap)
+		{
+			// 일단 아주 단순하게 둘 다 멈추게 처리
+			player_robot[id].move = false;
+			player_robot[id].speed = 0.0f;
+
+			player_robot[i].move = false;
+			player_robot[i].speed = 0.0f;
+
+			// 한 번이라도 부딪히면 더 이상 검사할 필요 없음
+			break;
+		}
+	}
 }
+

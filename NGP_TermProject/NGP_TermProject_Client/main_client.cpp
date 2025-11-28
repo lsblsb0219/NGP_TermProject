@@ -41,8 +41,7 @@ GLfloat start_location[MAX_PLAYER][3]{
 	-201.f, 0.f, 150.f,
 	-199.f, 0.f, 150.f, };
 
-HANDLE hThread;
-HANDLE hStartEvent, hWriteEvent;
+HANDLE hStartEvent;
 
 GLvoid drawScene();
 GLvoid KeyBoard(unsigned char key, int x, int y);
@@ -1419,41 +1418,6 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			else { closesocket(sock); }
 
 			printf("서버 접속 성공! GAME_START 대기...\n");
-			retval = recv(sock, (char*)&client_id, sizeof(int), 0);
-			if (client_id == SOCKET_ERROR) err_quit("recv()");
-			else {
-				player_robot[client_id].move = false;
-				player_robot[client_id].y_radian = 180.0f, player_robot[client_id].shake_dir = 1;
-				player_robot[client_id].x = start_location[client_id][0];
-				player_robot[client_id].y = start_location[client_id][1];
-				player_robot[client_id].z = start_location[client_id][2];
-				player_robot[client_id].bb = get_bb(player_robot[client_id]);
-			}
-
-			// GAME_START 수신
-			char buf[256];
-			retval = recv(sock, buf, sizeof(buf) - 1, 0);
-			if (retval <= 0) {
-				printf("서버 종료\n");
-				closesocket(sock);
-				return;
-			}
-			buf[retval] = '\0';
-
-			if (strcmp(buf, "GAME_START") == 0) {
-				printf("[클라이언트] 게임 시작 패킷 수신\n");
-				gameState = 1;
-			}
-
-			start_time = int(time(NULL));
-
-			// 클라이언트 ID값 전송
-			retval = send(sock, (char*)&client_id, sizeof(int), 0);
-			if (retval == SOCKET_ERROR) {
-				err_display("send()");
-			}
-
-			SetEvent(hStartEvent);
 
 			break;
 		}
@@ -1642,7 +1606,6 @@ GLvoid TimerFunc(int x)
 		}
 	}
 	glutTimerFunc(10, TimerFunc, 1);
-	SetEvent(hWriteEvent);
 	glutPostRedisplay();
 }
 GLvoid Bump(int index)
@@ -1682,27 +1645,52 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 {
 	SOCKET sock = (SOCKET)arg;
 	int retval;
+	char buf[BUFSIZE];
 
-	WaitForSingleObject(hStartEvent, INFINITE);
+	// 1) 서버에서 클라 ID 수신
+	retval = recv(sock, (char*)&client_id, sizeof(int), 0);
+	if (retval <= 0) return 0;
 
+	// 2) 로봇 초기화
+	player_robot[client_id].move = false;
+	player_robot[client_id].y_radian = 180.0f, player_robot[client_id].shake_dir = 1;
+	player_robot[client_id].x = start_location[client_id][0];
+	player_robot[client_id].y = start_location[client_id][1];
+	player_robot[client_id].z = start_location[client_id][2];
+	player_robot[client_id].bb = get_bb(player_robot[client_id]);
+
+	// 3) 서버로 내 ID 다시 전송
+	send(sock, (char*)&client_id, sizeof(int), 0);
+
+	// 4) GAME_START 기다리기
+	retval = recv(sock, buf, sizeof(buf), 0);
+	if (retval <= 0) return 0;
+	
+	// 5) 서버에서 GAME_START 신호 받기
+	if (strcmp(buf, "GAME_START") == 0)	{
+		printf("[클라이언트] GAME_START 신호 수신\n");
+		gameState = 1;
+		SetEvent(hStartEvent);
+	}
+
+	// 6) 메인 루프 시작
 	while (1) {
-		WaitForSingleObject(hWriteEvent, INFINITE);
 		// 플레이어 정보 send()
-		retval = send(sock, (char*)&player_robot[client_id], sizeof(player_robot[client_id]), 0);
+		send(sock, (char*)&player_robot[client_id], sizeof(player_robot[client_id]), 0);
 		if (retval == SOCKET_ERROR) {
 			err_display("send()");
 			break;
 		}
 
-		// 나머지 플레이어 정보 받기 recv()
+		// 4) 나머지 플레이어 정보 받기 recv()
 		for (int i = 0; i < MAX_PLAYER; ++i) {
 			retval = recv(sock, (char*)&player_robot[i], sizeof(player_robot[i]), 0);
 			if (retval == SOCKET_ERROR) {
 				err_display("recv()");
 				break;
 			}
+			player_robot[i].bb = get_bb(player_robot[i]);
 		}
-		ResetEvent(hWriteEvent);
 	}
 	printf("[Thread] 클라이언트 스레드 종료\n");
 
