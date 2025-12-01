@@ -42,7 +42,7 @@ GLfloat start_location[MAX_PLAYER][3]{
 	-201.f, 0.f, 150.f,
 	-199.f, 0.f, 150.f, };
 
-HANDLE hStartEvent, hReadEvent, hWriteEvent;
+HANDLE hReadEvent, hWriteEvent;
 
 GLvoid drawScene();
 GLvoid KeyBoard(unsigned char key, int x, int y);
@@ -54,9 +54,8 @@ GLvoid Bump(int index);
 //DWORD WINAPI client_key_thread(LPVOID arg);
 DWORD WINAPI client_main_thread(LPVOID arg);
 
-//void interaction_result();
 //int interaction_count();
-//
+
 //bool match_loading();
 
 void drawRobot(glm::mat4 axisTransForm, unsigned int modelLocation, Robot robot);
@@ -314,7 +313,6 @@ int main(int argc, char** argv)
 	InitBuffer();
 	InitTextures();
 
-	hStartEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	hReadEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	hWriteEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
@@ -1397,7 +1395,6 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 		case 'q':
 			glutLeaveMainLoop();
 
-			CloseHandle(hStartEvent);
 			CloseHandle(hReadEvent);
 			CloseHandle(hWriteEvent);
 			closesocket(sock);
@@ -1583,7 +1580,6 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 	if (strcmp(buf, "GAME_START") == 0) {
 		printf("[클라이언트] GAME_START 신호 수신\n");
 		gameState = 1;
-		SetEvent(hStartEvent);
 	}
 
 	// 서버로 내 ID 다시 전송
@@ -1626,10 +1622,6 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 	return 0;
 }
 
-//void interaction_result()
-//{
-//
-//}
 //int interaction_count()
 //{
 //
