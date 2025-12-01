@@ -16,7 +16,8 @@ char* SERVERIP = (char*)"127.0.0.1";
 #define SERVERPORT 9000
 #define BUFSIZE    512
 
-#define MAX_PLAYER 3
+#define MAX_PLAYER 3	// 접속 인원 제한
+#define BLOCK_NUM 19	// 장애물 수
 
 typedef struct Bounding_Box {
 	GLfloat x1, z1, x2, z2;
@@ -33,15 +34,15 @@ struct Robot {
 	bool move = false; // 움직이고 있는지(대기 후 이동)
 };
 #pragma pack()
-Robot player_robot[MAX_PLAYER];
-Robot block_robot[19];
+Robot player_robot[MAX_PLAYER], block_robot[19];
+
 int CountDown = 0;
 GLfloat start_location[MAX_PLAYER][3]{
 	-203.f, 0.f, 150.f,
 	-201.f, 0.f, 150.f,
 	-199.f, 0.f, 150.f, };
 
-HANDLE hStartEvent;
+HANDLE hStartEvent, hReadEvent, hWriteEvent;
 
 GLvoid drawScene();
 GLvoid KeyBoard(unsigned char key, int x, int y);
@@ -298,8 +299,7 @@ int main(int argc, char** argv)
 	glutCreateWindow("2024_Computer_Graphics_Final_Project");
 
 	glewExperimental = GL_TRUE;
-	if (glewInit() != GLEW_OK)
-	{
+	if (glewInit() != GLEW_OK) {
 		std::cerr << "Unable to initialize GLEW" << std::endl;
 		exit(EXIT_FAILURE);
 	}
@@ -315,6 +315,8 @@ int main(int argc, char** argv)
 	InitTextures();
 
 	hStartEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	hReadEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	hWriteEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 	glutKeyboardFunc(KeyBoard);
 	glutSpecialFunc(SpecialKeyBoard);
@@ -427,78 +429,6 @@ void InitBuffer()
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	//--- attribute 인덱스 1번을 사용 가능하게 함.
 	glEnableVertexAttribArray(2);
-
-	{
-		block_robot[0].road[0][0] = -203,	block_robot[0].road[0][1] = 140;
-		block_robot[0].road[1][0] = -203,	block_robot[0].road[1][1] = -150;
-
-		block_robot[1].road[0][0] = -199,	block_robot[1].road[0][1] = 140;
-		block_robot[1].road[1][0] = -199,	block_robot[1].road[1][1] = -150;
-
-		block_robot[2].road[0][0] = -201,	block_robot[2].road[0][1] = 130;
-		block_robot[2].road[1][0] = -201,	block_robot[2].road[1][1] = -150;
-
-		block_robot[3].road[0][0] = -202,	block_robot[3].road[0][1] = 0;
-		block_robot[3].road[1][0] = -202,	block_robot[3].road[1][1] = 150;
-
-		block_robot[4].road[0][0] = -200,	block_robot[4].road[0][1] = 0;
-		block_robot[4].road[1][0] = -200,	block_robot[4].road[1][1] = 150;
-
-		block_robot[5].road[0][0] = -201,	block_robot[5].road[0][1] = 5;
-		block_robot[5].road[1][0] = -201,	block_robot[5].road[1][1] = 150;
-
-		block_robot[6].road[0][0] = -195,	block_robot[6].road[0][1] = -153;
-		block_robot[6].road[1][0] = -195,	block_robot[6].road[1][1] = -147;
-
-		block_robot[7].road[0][0] = 200,	block_robot[7].road[0][1] = -150;
-		block_robot[7].road[1][0] = 190,	block_robot[7].road[1][1] = -150;
-
-		block_robot[8].road[0][0] = 200,	block_robot[8].road[0][1] = -153;
-		block_robot[8].road[1][0] = -200,	block_robot[8].road[1][1] = -148;
-
-		block_robot[9].road[0][0] = 200,	block_robot[9].road[0][1] = -152;
-		block_robot[9].road[1][0] = -200,	block_robot[9].road[1][1] = -152;
-
-		block_robot[10].road[0][0] = 198,	block_robot[10].road[0][1] = -150;
-		block_robot[10].road[1][0] = -198,	block_robot[10].road[1][1] = -150;
-
-		block_robot[11].road[0][0] = 196,	block_robot[11].road[0][1] = -148;
-		block_robot[11].road[1][0] = -196,	block_robot[11].road[1][1] = -148;
-		
-		block_robot[12].road[0][0] = 198,	block_robot[12].road[0][1] = -110;
-		block_robot[12].road[1][0] = 204,	block_robot[12].road[1][1] = -110;
-
-		block_robot[13].road[0][0] = 204,	block_robot[13].road[0][1] = -40;
-		block_robot[13].road[1][0] = 198,	block_robot[13].road[1][1] = -40;
-
-		block_robot[14].road[0][0] = 203,	block_robot[14].road[0][1] = -40;
-		block_robot[14].road[1][0] = 203,	block_robot[14].road[1][1] = -110;
-
-		block_robot[15].road[0][0] = 199,	block_robot[15].road[0][1] = -40;
-		block_robot[15].road[1][0] = 199,	block_robot[15].road[1][1] = 20;
-
-		block_robot[16].road[0][0] = 200,	block_robot[16].road[0][1] = 50;
-		block_robot[16].road[1][0] = 200,	block_robot[16].road[1][1] = 140;
-
-		block_robot[17].road[0][0] = 202,	block_robot[17].road[0][1] = 140;
-		block_robot[17].road[1][0] = 202,	block_robot[17].road[1][1] = 50;
-
-		block_robot[18].road[0][0] = 201,	block_robot[18].road[0][1] = 148;
-		block_robot[18].road[1][0] = 201,	block_robot[18].road[1][1] = 148;
-	}
-	for (int i = 0; i < 19; ++i) {
-		block_robot[i].x = block_robot[i].road[0][0];
-		block_robot[i].z = block_robot[i].road[0][1];
-		block_robot[i].speed = 0.2f, block_robot[i].shake_dir = 1;
-		if (block_robot[i].road[0][0] < block_robot[i].road[1][0])
-			block_robot[i].y_radian = 90.0f;
-		if (block_robot[i].road[0][0] > block_robot[i].road[1][0])
-			block_robot[i].y_radian = -90.0f;
-		if (block_robot[i].road[0][1] < block_robot[i].road[1][1])
-			block_robot[i].y_radian = 0.0f;
-		if (block_robot[i].road[0][1] > block_robot[i].road[1][1])
-			block_robot[i].y_radian = 180.0f;
-	}
 }
 void InitTextures() 
 {
@@ -777,7 +707,7 @@ GLvoid drawScene()
 			drawRobot(axisTransForm, modelLocation, player_robot[i]);	// 플레이어 2, 3
 		/*이건 장애물 로봇*/
 		glUniform3f(objColorLocation, 1.0f, 1.0f, 1.0f);
-		for (int i = 0; i < 19; ++i) {
+		for (int i = 0; i < BLOCK_NUM; ++i) {
 			glm::mat4 shapeTransForm = glm::mat4(1.0f);//변환 행렬 생성 T
 			shapeTransForm = glm::translate(shapeTransForm, glm::vec3(block_robot[i].x, 0.0f, block_robot[i].z));      //robot위치
 			shapeTransForm = glm::rotate(shapeTransForm, glm::radians(block_robot[i].y_radian), glm::vec3(0.0f, 1.0f, 0.0f));                 //보는 방향
@@ -1009,7 +939,6 @@ GLvoid drawScene()
 		}
 		//미니 맵===================================================================================================================================================================================
 		{
-
 			glViewport(0 * background_width / 4, 3 * background_height / 4, background_width / 4, background_height / 4); /*대충 오른쪽상단 어딘가에 배치 바라요*/
 
 			unsigned int modelLocation = glGetUniformLocation(shaderID, "modelTransform");//월드 변환 행렬값을 셰이더의 uniform mat4 modelTransform에게 넘겨줌
@@ -1378,7 +1307,6 @@ GLvoid drawScene()
 			print_num /= 10;
 		}
 	}
-
 	glutSwapBuffers();
 }
 GLvoid Reshape(int w, int h)
@@ -1401,7 +1329,8 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 
 			// 소켓 생성
 			sock = socket(AF_INET, SOCK_STREAM, 0);
-			if (sock == INVALID_SOCKET) err_quit("socket()");
+			if (sock == INVALID_SOCKET) 
+				err_quit("socket()");
 
 			// connect()
 			memset(&serveraddr, 0, sizeof(serveraddr));
@@ -1410,7 +1339,8 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 			serveraddr.sin_port = htons(SERVERPORT);
 
 			int retval = connect(sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
-			if (retval == SOCKET_ERROR) err_quit("connect()");
+			if (retval == SOCKET_ERROR)
+				err_quit("connect()");
 
 			// 쓰레드 생성
 			HANDLE hThread = CreateThread(NULL, 0, client_main_thread, (LPVOID)sock, 0, NULL);
@@ -1447,7 +1377,12 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 		{
 		case 'q':
 			glutLeaveMainLoop();
+
+			CloseHandle(hStartEvent);
+			CloseHandle(hReadEvent);
+			CloseHandle(hWriteEvent);
 			closesocket(sock);
+
 			WSACleanup();
 			break;
 		default:
@@ -1476,7 +1411,7 @@ GLvoid SpecialKeyBoard(int key, int x, int y)
 
 GLvoid TimerFunc(int x)
 {
-	if (gameState == 2) {
+	if (gameState == 2) {	// 엔딩 창
 		if (end_anime == 0) {
 			camera_radian += 1.0f;
 			if (camera_radian == 180.0f)
@@ -1501,11 +1436,23 @@ GLvoid TimerFunc(int x)
 				if (block_robot[i].shake <= 0.0f || block_robot[i].shake >= 60.0f)
 					block_robot[i].shake_dir *= -1;
 			}
+		}	
+		for (int i = 0; i < BLOCK_NUM; ++i) {
+			if (i < 2) {
+				block_robot[i].x = 1.0f * (i % 5) - 2.0f;
+				block_robot[i].z = -1.0f * (i / 5);
+			}
+			else {
+				block_robot[i].x = 1.0f * ((i + 1) % 5) - 2.0f;
+				block_robot[i].z = -1.0f * ((i + 1) / 5);
+			}
+			block_robot[i].y_radian = atan2(player_robot[client_id].x - player_robot[client_id].x, player_robot[client_id].x - player_robot[client_id].x);
+			block_robot[i].shake = 0.0f; block_robot[i].shake_dir = 1;
 		}
 	}
-	else {
+	else if (WaitForSingleObject(hWriteEvent, 0) == WAIT_OBJECT_0){	// 게임 중
 		if (player_robot[client_id].move) {
-			if (collision(map_bb, player_robot[client_id].bb) || collision(map_bb2, player_robot[client_id].bb) || collision(map_bb3, player_robot[client_id].bb)) {
+			if (collision(map_bb, player_robot[client_id].bb) || collision(map_bb2, player_robot[client_id].bb) || collision(map_bb3, player_robot[client_id].bb)) {	// 땅위에 있다면
 				player_robot[client_id].x += sin(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
 				player_robot[client_id].z += cos(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
 				player_robot[client_id].bb = get_bb(player_robot[client_id]);
@@ -1532,7 +1479,7 @@ GLvoid TimerFunc(int x)
 				std::cout << read_ten(finish_time - start_time) << '\n';
 			}
 		}
-		if (player_robot[client_id].y < 0) {
+		if (player_robot[client_id].y < 0) {	// 떨어짐
 			player_robot[client_id].y -= player_robot[client_id].speed;
 			player_robot[client_id].speed += 0.01f;
 
@@ -1550,60 +1497,8 @@ GLvoid TimerFunc(int x)
 				player_robot[client_id].bb = get_bb(player_robot[client_id]);
 			}
 		}
-
-		for (int i = 0; i < 19; ++i) {
-			if (gameState == 2) {
-				if (i < 2) {
-					block_robot[i].x = 1.0f * (i % 5) - 2.0f;
-					block_robot[i].z = -1.0f * (i / 5);
-				}
-				else {
-					block_robot[i].x = 1.0f * ((i + 1) % 5) - 2.0f;
-					block_robot[i].z = -1.0f * ((i + 1) / 5);
-				}
-				block_robot[i].y_radian = atan2(player_robot[client_id].x - player_robot[client_id].x, player_robot[client_id].x - player_robot[client_id].x);
-				block_robot[i].shake = 0.0f; block_robot[i].shake_dir = 1;
-			}
-			else {
-				if (player_robot[client_id].move && collision(block_robot[i].bb, player_robot[client_id].bb)) {
-					player_robot[client_id].move = false;
-					player_robot[client_id].x -= sin(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
-					player_robot[client_id].z -= cos(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
-					player_robot[client_id].speed = 0;
-					GLfloat radian = atan2(player_robot[client_id].x - block_robot[i].x, player_robot[client_id].z - block_robot[i].z);
-					player_robot[client_id].road[0][0] = block_robot[i].x, player_robot[client_id].road[0][1] = block_robot[i].z;
-					player_robot[client_id].road[1][0] = block_robot[i].x + 2.0f * sin(radian), player_robot[client_id].road[1][1] = block_robot[i].z + 2.0f * cos(radian);
-					glutTimerFunc(10, Bump, i);
-				}
-				else {
-					block_robot[i].x += sin(glm::radians(block_robot[i].y_radian)) * block_robot[i].speed;
-					block_robot[i].z += cos(glm::radians(block_robot[i].y_radian)) * block_robot[i].speed;
-					block_robot[i].bb = get_bb(block_robot[i]);
-					block_robot[i].shake += block_robot[i].shake_dir * 20 * block_robot[i].speed;
-					if (block_robot[i].shake <= -60.0f || block_robot[i].shake >= 60.0f)
-						block_robot[i].shake_dir *= -1;
-					if ((block_robot[i].road[0][0] < block_robot[i].x and block_robot[i].x < block_robot[i].road[1][0]) ||
-						(block_robot[i].road[0][0] > block_robot[i].x and block_robot[i].x > block_robot[i].road[1][0]) ||
-						(block_robot[i].road[0][1] < block_robot[i].z and block_robot[i].z < block_robot[i].road[1][1]) ||
-						(block_robot[i].road[0][1] > block_robot[i].z and block_robot[i].z > block_robot[i].road[1][1]));
-					else
-						block_robot[i].y_radian += 180.0f;
-
-					if (player_robot[client_id].move && collision(block_robot[i].bb, player_robot[client_id].bb)) {
-						player_robot[client_id].move = false;
-						block_robot[i].x -= sin(glm::radians(block_robot[i].y_radian)) * block_robot[i].speed;
-						block_robot[i].z -= cos(glm::radians(block_robot[i].y_radian)) * block_robot[i].speed;
-						player_robot[client_id].x -= sin(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
-						player_robot[client_id].z -= cos(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
-						player_robot[client_id].speed = 0;
-						GLfloat radian = atan2(player_robot[client_id].x - block_robot[i].x, player_robot[client_id].z - block_robot[i].z);
-						player_robot[client_id].road[0][0] = block_robot[i].x, player_robot[client_id].road[0][1] = block_robot[i].z;
-						player_robot[client_id].road[1][0] = block_robot[i].x + 2.0f * sin(radian), player_robot[client_id].road[1][1] = block_robot[i].z + 2.0f * cos(radian);
-						glutTimerFunc(10, Bump, i);
-					}
-				}
-			}
-		}
+		ResetEvent(hWriteEvent);
+		SetEvent(hReadEvent);
 	}
 	glutTimerFunc(10, TimerFunc, 1);
 	glutPostRedisplay();
@@ -1647,11 +1542,12 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 	int retval;
 	char buf[BUFSIZE];
 
-	// 1) 서버에서 클라 ID 수신
+	// 서버에서 클라 ID 수신
 	retval = recv(sock, (char*)&client_id, sizeof(int), 0);
-	if (retval <= 0) return 0;
+	if (retval == SOCKET_ERROR)
+		err_display("recv()");
 
-	// 2) 로봇 초기화
+	// 로봇 초기화
 	player_robot[client_id].move = false;
 	player_robot[client_id].y_radian = 180.0f, player_robot[client_id].shake_dir = 1;
 	player_robot[client_id].x = start_location[client_id][0];
@@ -1659,39 +1555,53 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 	player_robot[client_id].z = start_location[client_id][2];
 	player_robot[client_id].bb = get_bb(player_robot[client_id]);
 
-	// 3) 서버로 내 ID 다시 전송
-	send(sock, (char*)&client_id, sizeof(int), 0);
-
-	// 4) GAME_START 기다리기
+	// GAME_START 기다리기
 	retval = recv(sock, buf, sizeof(buf), 0);
-	if (retval <= 0) return 0;
-	
-	// 5) 서버에서 GAME_START 신호 받기
-	if (strcmp(buf, "GAME_START") == 0)	{
+	if (retval == SOCKET_ERROR)
+		err_display("recv()");
+
+	// 서버에서 GAME_START 신호 받기
+	if (strcmp(buf, "GAME_START") == 0) {
 		printf("[클라이언트] GAME_START 신호 수신\n");
 		gameState = 1;
 		SetEvent(hStartEvent);
 	}
 
-	// 6) 메인 루프 시작
-	while (1) {
-		// 플레이어 정보 send()
-		send(sock, (char*)&player_robot[client_id], sizeof(player_robot[client_id]), 0);
+	// 서버로 내 ID 다시 전송
+	retval = send(sock, (char*)&client_id, sizeof(int), 0);
+	if(retval == SOCKET_ERROR)
+		err_display("send()");
+
+	while (1/*게임 중*/) {
+		// 플레이어 정보 송신 send()
+		retval = send(sock, (char*)&player_robot[client_id], sizeof(player_robot[client_id]), 0);
 		if (retval == SOCKET_ERROR) {
 			err_display("send()");
-			break;
+			return 0;
 		}
+		ResetEvent(hReadEvent);
 
-		// 4) 나머지 플레이어 정보 받기 recv()
+		// 플레이어 정보 수신 recv()
 		for (int i = 0; i < MAX_PLAYER; ++i) {
 			retval = recv(sock, (char*)&player_robot[i], sizeof(player_robot[i]), 0);
 			if (retval == SOCKET_ERROR) {
 				err_display("recv()");
-				break;
+				return 0;
 			}
-			player_robot[i].bb = get_bb(player_robot[i]);
 		}
+		SetEvent(hWriteEvent);
+		
+		// 장애물들 정보 수신 recv()
+		for (int i = 0; i < BLOCK_NUM; ++i) {
+			retval = recv(sock, (char*)&block_robot[i], sizeof(block_robot[i]), 0);
+			if (retval == SOCKET_ERROR) {
+				err_display("recv()");
+				return 0;
+			}
+		}
+		WaitForSingleObject(hReadEvent, INFINITE);
 	}
+
 	printf("[Thread] 클라이언트 스레드 종료\n");
 
 	return 0;
