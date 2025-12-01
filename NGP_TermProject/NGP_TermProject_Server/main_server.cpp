@@ -35,14 +35,13 @@ typedef struct player_packet {
 player_packet player_robot[MAX_PLAYER], block_robot[BLOCK_NUM];
 
 HANDLE hKeyEvent, hGameStartEvent;
-HANDLE hWriteEvent[MAX_PLAYER], hReadEvent, hSendEvent[MAX_PLAYER];
+HANDLE hWriteEvent[MAX_PLAYER];
 
 void send_collision_packet();
 void send_goal_packet();
 void sent_start_packet();
 
 void InitBuffer();
-void player_collision(int id);
 BB get_bb(Robot robot);
 bool collision(BB obj_a, BB obj_b);
 
@@ -84,10 +83,6 @@ DWORD WINAPI main_thread(LPVOID arg)
 		}
 		SetEvent(hWriteEvent[client_id]);	// 플레이어 정보 확인
 
-		// 충돌 검사
-//		player_collision(client_id);
-
-//		WaitForMultipleObjects(MAX_PLAYER, hSendEvent, TRUE, INFINITE);
 		// send() 플레이어 정보 보내기 - Robot[3]
 		for (int i = 0; i < MAX_PLAYER; i++) {
 			retval = send(sock, (char*)&player_robot[i], sizeof(player_robot[i]), 0);
@@ -105,7 +100,6 @@ DWORD WINAPI main_thread(LPVOID arg)
 				break;
 			}
 		}
-//		ResetEvent(hSendEvent[client_id]);
 	}
 
 	closesocket(sock);
@@ -175,7 +169,6 @@ DWORD WINAPI update_thread(LPVOID)
 			}
 			ResetEvent(hWriteEvent[id]);
 		}
-		SetEvent(hReadEvent);	// 플레이어 정보 확인
 	}
 
 	printf("[Thread] 클라이언트 스레드 종료\n");
@@ -212,7 +205,6 @@ int main(int argc, char* argv[])
 	// CreateEvent()
 	hKeyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	hGameStartEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	hReadEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 	// 데이터 통신에 사용할 변수
 	SOCKET client_sock;
@@ -265,8 +257,7 @@ int main(int argc, char* argv[])
 		HANDLE hThread = CreateThread(NULL, 0, main_thread, (LPVOID)client_sock, 0, NULL);
 		if (hThread)
 			CloseHandle(hThread);
-		hWriteEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
-		hSendEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
+		hWriteEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);\
 
 		// client sock count 증가
 		client_sock_count++;
@@ -275,10 +266,8 @@ int main(int argc, char* argv[])
 	// 이벤트 핸들 닫기
 	CloseHandle(hKeyEvent);
 	CloseHandle(hGameStartEvent);
-	CloseHandle(hReadEvent);
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		CloseHandle(hWriteEvent[i]);
-		CloseHandle(hSendEvent[i]);
 	}
 
 	// 소켓 닫기
