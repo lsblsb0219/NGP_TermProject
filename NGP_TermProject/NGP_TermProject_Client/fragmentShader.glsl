@@ -21,6 +21,8 @@ uniform sampler2D outTexture14;
 uniform sampler2D outTexture15;
 uniform sampler2D outTexture16;
 uniform sampler2D outTexture17;
+uniform sampler2D outTexture18;
+uniform sampler2D outTexture19;
 
 uniform int index;
 uniform vec3 objectColor;
@@ -60,11 +62,13 @@ void main(void)
 		texture (outTexture13, out_TexCoord) + 
 		texture (outTexture14, out_TexCoord) + 
 		texture (outTexture15, out_TexCoord) + 
-		texture (outTexture16, out_TexCoord)) *  vec4 (result, 1.0);
+		texture (outTexture16, out_TexCoord) +
+		texture (outTexture18, out_TexCoord) + 
+		texture (outTexture19, out_TexCoord) ) *  vec4 (result, 1.0);
 		break;
 
 	case 2:
-    FragColor = texture(outTexture17, vec2(1.0 - out_TexCoord.x, out_TexCoord.y));
+		FragColor = texture(outTexture17, vec2(1.0 - out_TexCoord.x, out_TexCoord.y));
     break;
 	}
 }

@@ -277,7 +277,7 @@ GLchar* vertexSource, * fragmentSource;
 GLuint shaderID;
 GLuint vertexShader;
 GLuint fragmentShader;
-unsigned int texture_runmap[17];
+unsigned int texture_runmap[19];
 BITMAPINFO* bmp;
 
 int gameState = 0;		// 0: 타이틀, 1: 본게임, 2:엔딩
@@ -432,7 +432,7 @@ void InitBuffer()
 }
 void InitTextures() 
 {
-	glGenTextures(17, texture_runmap);
+	glGenTextures(19, texture_runmap);
 	glUseProgram(shaderID);
 
 	//--- texture[0]
@@ -621,6 +621,28 @@ void InitTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	unsigned char* data17 = LoadDIBitmap("title.bmp", &bmp);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, data17);
+
+	// --- texture[17] - LOSE
+	int tLocation18 = glGetUniformLocation(shaderID, "outTexture18");
+	glUniform1i(tLocation18, 17);
+	glBindTexture(GL_TEXTURE_2D, texture_runmap[17]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	unsigned char* data18 = LoadDIBitmap("lose.bmp", &bmp);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1000, 1000, 0, GL_BGR, GL_UNSIGNED_BYTE, data18);
+
+	// --- texture[18] - WIN
+	int tLocation19 = glGetUniformLocation(shaderID, "outTexture19");
+	glUniform1i(tLocation19, 18);
+	glBindTexture(GL_TEXTURE_2D, texture_runmap[18]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	unsigned char* data19 = LoadDIBitmap("win.bmp", &bmp);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1000, 1000, 0, GL_BGR, GL_UNSIGNED_BYTE, data19);
 }
 
 GLfloat camera_move[3]{ 0.0f, 2.0f, 2.5f }, camera_look[3]{ 0.0f, 0.5f, 0.0f }, light_pos[3]{ 0.0f, 2.0f, 2.0f }, camera_radian = 0.0f;
@@ -1289,23 +1311,20 @@ GLvoid drawScene()
 			glBindTexture(GL_TEXTURE_2D, texture_runmap[5]);
 			glDrawArrays(GL_QUADS, 20, 4); //사각형 크기 1.0 x 0.0 x 1.0
 		}
-		/*점수*/
-		int print_num = finish_time - start_time;
-		for (int i = 0; i < end_anime && i < read_ten(finish_time - start_time); ++i) {
-			glActiveTexture(GL_TEXTURE0); //--- 유닛 0을 활성화
-			glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
-			model = glm::translate(model, glm::vec3(0.0f, 0.0f, 2.0f));
-			model = glm::rotate(model, glm::radians(camera_radian), glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::translate(model, glm::vec3(1.0f * read_ten(finish_time - start_time) / 2 - 1.0f * i, 1.0f, 0.0f));
-			model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::scale(model, glm::vec3(0.5f, 1.0f, 0.0f));
-			model = axisTransForm * model;
-			glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+		/*점수(Lose, Win)*/
+		bool victory = true;
+		glActiveTexture(GL_TEXTURE0); //--- 유닛 0을 활성화
+		glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 3.0f));
+		model = glm::rotate(model, glm::radians(camera_radian), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::translate(model, glm::vec3(1.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(1.5f, 1.5f, 0.0f));
+		model = axisTransForm * model;
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 
-			glBindTexture(GL_TEXTURE_2D, texture_runmap[6 + print_num % 10]);
-			glDrawArrays(GL_QUADS, 0, 4); //사각형 크기 1.0 x 0.0 x 1.0
-			print_num /= 10;
-		}
+		glBindTexture(GL_TEXTURE_2D, texture_runmap[17 + victory]);	// Win == True(1), Lose == False(0)
+		glDrawArrays(GL_QUADS, 0, 4); //사각형 크기 1.0 x 0.0 x 1.0
 	}
 	glutSwapBuffers();
 }
