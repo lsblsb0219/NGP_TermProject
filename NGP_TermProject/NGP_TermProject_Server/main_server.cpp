@@ -37,7 +37,6 @@ player_packet player_robot[MAX_PLAYER], block_robot[BLOCK_NUM];
 HANDLE hKeyEvent, hGameStartEvent;
 HANDLE hWriteEvent[MAX_PLAYER];
 
-void send_collision_packet();
 void send_goal_packet();
 void sent_start_packet();
 
@@ -69,9 +68,9 @@ DWORD WINAPI main_thread(LPVOID arg)
 
 	// 클라이언트 ID값 수신
 	retval = recv(sock, (char*)&client_id, sizeof(int), 0);
-	if (retval == SOCKET_ERROR) {
+	if (retval == SOCKET_ERROR) 
 		err_display("send()");
-	}
+
 	printf("[Thread] 클라이언트 ID(client_%d) 수신 완료\n", client_id);
 
 	while (1/*게임 중일 때*/) {
@@ -278,10 +277,6 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void send_collision_packet()
-{
-
-}
 void send_goal_packet()
 {
 
