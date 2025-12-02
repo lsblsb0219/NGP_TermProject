@@ -36,6 +36,7 @@ player_packet player_robot[MAX_PLAYER], block_robot[BLOCK_NUM];
 
 HANDLE hKeyEvent, hGameStartEvent;
 HANDLE hWriteEvent[MAX_PLAYER], hReadEvent[MAX_PLAYER];
+bool bump[MAX_PLAYER];
 
 void send_goal_packet();
 void sent_start_packet();
@@ -101,6 +102,14 @@ DWORD WINAPI main_thread(LPVOID arg)
 				break;
 			}
 		}
+
+		// send() 충돌 여부 보내기 - bump
+		retval = send(sock, (char*)&bump[client_id], sizeof(bool), 0);
+		if (retval == SOCKET_ERROR) {
+			err_display("send()");
+			break;
+		}
+		bump[client_id] = false;
 	}
 
 	closesocket(sock);
@@ -144,7 +153,7 @@ DWORD WINAPI update_thread(LPVOID)
 		for (int id = 0; id < MAX_PLAYER; ++id) {
 			for (int i = 0; i < MAX_PLAYER; ++i) {
 				if (i == id) continue;
-				if (player_robot[id].move && collision(player_robot[i].bb, player_robot[id].bb)) {
+				if (player_robot[id].move && collision(player_robot[i].bb, player_robot[id].bb)) {	// 플레이어 간 충돌
 					player_robot[id].move = false;
 					player_robot[id].x -= sin(glm::radians(player_robot[id].y_radian)) * player_robot[id].speed;
 					player_robot[id].z -= cos(glm::radians(player_robot[id].y_radian)) * player_robot[id].speed;
@@ -152,10 +161,11 @@ DWORD WINAPI update_thread(LPVOID)
 					GLfloat radian = atan2(player_robot[id].x - player_robot[i].x, player_robot[id].z - player_robot[i].z);
 					player_robot[id].road[0][0] = player_robot[i].x, player_robot[id].road[0][1] = player_robot[i].z;
 					player_robot[id].road[1][0] = player_robot[i].x + 2.0f * sin(radian), player_robot[id].road[1][1] = player_robot[i].z + 2.0f * cos(radian);
+					bump[id] = true;
 				}
 			}
 			for (int i = 0; i < BLOCK_NUM; ++i) {
-				if (player_robot[id].move && collision(block_robot[i].bb, player_robot[id].bb)) {
+				if (player_robot[id].move && collision(block_robot[i].bb, player_robot[id].bb)) {	// 플레이어와 장애물 충돌
 					player_robot[id].move = false;
 					player_robot[id].x -= sin(glm::radians(player_robot[id].y_radian)) * player_robot[id].speed;
 					player_robot[id].z -= cos(glm::radians(player_robot[id].y_radian)) * player_robot[id].speed;
@@ -163,9 +173,7 @@ DWORD WINAPI update_thread(LPVOID)
 					GLfloat radian = atan2(player_robot[id].x - block_robot[i].x, player_robot[id].z - block_robot[i].z);
 					player_robot[id].road[0][0] = block_robot[i].x, player_robot[id].road[0][1] = block_robot[i].z;
 					player_robot[id].road[1][0] = block_robot[i].x + 2.0f * sin(radian), player_robot[id].road[1][1] = block_robot[i].z + 2.0f * cos(radian);
-				}
-				else {
-
+					bump[id] = true;
 				}
 			}
 			ResetEvent(hWriteEvent[id]);

@@ -1496,7 +1496,7 @@ GLvoid TimerFunc(int x)
 	glutTimerFunc(10, TimerFunc, 1);
 	glutPostRedisplay();
 }
-GLvoid Bump(int index)
+GLvoid Bump(int x)
 {
 	if (gameState == 1) {
 		if (collision(map_bb, player_robot[client_id].bb) || collision(map_bb2, player_robot[client_id].bb) || collision(map_bb3, player_robot[client_id].bb)) {
@@ -1517,8 +1517,8 @@ GLvoid Bump(int index)
 		glm::vec2 player_spots = glm::vec2(player_robot[client_id].x, player_robot[client_id].z);
 
 		if (player_robot[client_id].y < 0.0f);
-		else if (index < 19 && glm::distance(road_spots, player_spots) < 2.0f)
-			glutTimerFunc(10, Bump, index);
+		else if (glm::distance(road_spots, player_spots) < 2.0f)
+			glutTimerFunc(10, Bump, 1);
 		else
 			player_robot[client_id].move = true;
 	}
@@ -1591,6 +1591,17 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 				return 0;
 			}
 		}
+
+		// �浹 ���� �ޱ� recv()
+		bool bump{};
+		retval = recv(sock, (char*)&bump, sizeof(bool), 0);
+		if (retval == SOCKET_ERROR) {
+			err_display("recv()");
+			return 0;
+		}
+		if (bump)
+			glutTimerFunc(10, Bump, 1);
+
 		WaitForSingleObject(hReadEvent, INFINITE);
 	}
 
