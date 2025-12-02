@@ -12,7 +12,8 @@
 
 #include "..\Common.h"
 
-char* SERVERIP = (char*)"127.0.0.1";
+// char* SERVERIP = (char*)"127.0.0.1";
+char* SERVERIP = (char*)"192.168.66.212";
 #define SERVERPORT 9000
 #define BUFSIZE    512
 
@@ -56,7 +57,7 @@ DWORD WINAPI client_main_thread(LPVOID arg);
 
 //int interaction_count();
 
-//bool match_loading();
+void match_loading();
 
 void drawRobot(glm::mat4 axisTransForm, unsigned int modelLocation, Robot robot);
 int read_ten(int num);
@@ -1337,34 +1338,8 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 		switch (key) {
 		case 13:
 			// key - enter
-			printf("서버에 접속 중...\n");
-
-			// 윈속 초기화
-			WSADATA wsa;
-			if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-				return;
-
-			// 소켓 생성
-			sock = socket(AF_INET, SOCK_STREAM, 0);
-			if (sock == INVALID_SOCKET) 
-				err_quit("socket()");
-
-			// connect()
-			memset(&serveraddr, 0, sizeof(serveraddr));
-			serveraddr.sin_family = AF_INET;
-			inet_pton(AF_INET, SERVERIP, &serveraddr.sin_addr);
-			serveraddr.sin_port = htons(SERVERPORT);
-
-			int retval = connect(sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
-			if (retval == SOCKET_ERROR)
-				err_quit("connect()");
-
-			// 쓰레드 생성
-			HANDLE hThread = CreateThread(NULL, 0, client_main_thread, (LPVOID)sock, 0, NULL);
-			if (hThread != NULL) { CloseHandle(hThread); }
-			else { closesocket(sock); }
-
-			printf("서버 접속 성공! GAME_START 대기...\n");
+			
+			match_loading();
 
 			break;
 		}
@@ -1627,10 +1602,37 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 //
 //}
 //
-//bool match_loading()
-//{
-//	
-//}
+void match_loading()
+{
+	printf("서버에 접속 중...\n");
+
+	// 윈속 초기화
+	WSADATA wsa;
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+		return;
+
+	// 소켓 생성
+	sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (sock == INVALID_SOCKET)
+		err_quit("socket()");
+
+	// connect()
+	memset(&serveraddr, 0, sizeof(serveraddr));
+	serveraddr.sin_family = AF_INET;
+	inet_pton(AF_INET, SERVERIP, &serveraddr.sin_addr);
+	serveraddr.sin_port = htons(SERVERPORT);
+
+	int retval = connect(sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+	if (retval == SOCKET_ERROR)
+		err_quit("connect()");
+
+	// 쓰레드 생성
+	HANDLE hThread = CreateThread(NULL, 0, client_main_thread, (LPVOID)sock, 0, NULL);
+	if (hThread != NULL) { CloseHandle(hThread); }
+	else { closesocket(sock); }
+
+	printf("서버 접속 성공! GAME_START 대기...\n");
+}
 
 void drawRobot(glm::mat4 axisTransForm, unsigned int modelLocation, Robot robot)
 {
