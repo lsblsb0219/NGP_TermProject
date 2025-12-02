@@ -321,7 +321,7 @@ int main(int argc, char** argv)
 
 	glutKeyboardFunc(KeyBoard);
 	glutSpecialFunc(SpecialKeyBoard);
-	glutTimerFunc(100, TimerFunc, 1);
+	glutTimerFunc(10, TimerFunc, 1);
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(Reshape);
 
@@ -1493,7 +1493,7 @@ GLvoid TimerFunc(int x)
 		ResetEvent(hWriteEvent);
 		SetEvent(hReadEvent);
 	}
-	glutTimerFunc(100, TimerFunc, 1);
+	glutTimerFunc(10, TimerFunc, 1);
 	glutPostRedisplay();
 }
 GLvoid Bump(int index)
