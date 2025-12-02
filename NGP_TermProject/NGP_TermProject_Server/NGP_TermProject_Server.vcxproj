@@ -118,7 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\gl;C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\gl\glm;C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um;C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\glm;C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\gl\glm\glm;C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\glm\glm</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um\gl;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um\glm;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um\glm\glm;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um\gl\glm;C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\gl\glm\glm</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
