@@ -13,7 +13,7 @@
 #include "..\Common.h"
 
 // char* SERVERIP = (char*)"127.0.0.1";
-char* SERVERIP = (char*)"192.168.66.212";
+char* SERVERIP = (char*)"172.30.1.98";
 #define SERVERPORT 9000
 #define BUFSIZE    512
 
@@ -38,6 +38,7 @@ struct Robot {
 Robot player_robot[MAX_PLAYER], block_robot[19];
 
 int CountDown = 0;
+bool victory = true;
 GLfloat start_location[MAX_PLAYER][3]{
 	-203.f, 0.f, 150.f,
 	-201.f, 0.f, 150.f,
@@ -648,7 +649,7 @@ void InitTextures()
 
 GLfloat camera_move[3]{ 0.0f, 2.0f, 2.5f }, camera_look[3]{ 0.0f, 0.5f, 0.0f }, light_pos[3]{ 0.0f, 2.0f, 2.0f }, camera_radian = 0.0f;
 int end_anime;
-BB map_bb{ -204.0f,-153.f,-198.f,151.f }, map_bb2{ -204.f,-153.f,204.f,-147.f }, map_bb3{ 198.0f,-153.f,204.f,151.f }, goal{ 198.f,149.f,204.f,151.f };
+BB map_bb{ -204.0f,-153.f,-198.f,151.f }, map_bb2{ -204.f,-153.f,204.f,-147.f }, map_bb3{ 198.0f,-153.f,204.f,151.f };
 
 GLvoid drawScene()
 {
@@ -1313,7 +1314,6 @@ GLvoid drawScene()
 			glDrawArrays(GL_QUADS, 20, 4); //»ç°¢Çü Å©±â 1.0 x 0.0 x 1.0
 		}
 		/*Á¡¼ö(Lose, Win)*/
-		bool victory = true;
 		glActiveTexture(GL_TEXTURE0); //--- À¯´Ö 0À» È°¼ºÈ­
 		glm::mat4 model = glm::mat4(1.0f);//º¯È¯ Çà·Ä »ý¼º T
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 3.0f));
@@ -1460,17 +1460,6 @@ GLvoid TimerFunc(int x)
 				player_robot[client_id].shake_dir *= -1;
 			if (player_robot[client_id].speed < 0.25f)
 				player_robot[client_id].speed += 0.001f;
-
-			// °ñÀÎ ÁöÁ¡¿¡ ·Îº¿ÀÌ µé¾î¿Ô´ÂÁö Ã¼Å©
-			if (collision(goal, player_robot[client_id].bb)) {
-				finish_time = int(time(NULL));
-				player_robot[client_id].x = 0.0f, player_robot[client_id].z = 0.0f, player_robot[client_id].y = 0.0f, player_robot[client_id].y_radian = 0.0f,
-					player_robot[client_id].shake = 0.0f, player_robot[client_id].shake_dir = 1;
-				player_robot[client_id].move = false;
-				gameState = 2;
-				std::cout << finish_time - start_time << '\n';
-				std::cout << read_ten(finish_time - start_time) << '\n';
-			}
 		}
 		if (player_robot[client_id].y < 0) {	// ¶³¾îÁü
 			player_robot[client_id].y -= player_robot[client_id].speed;
@@ -1524,11 +1513,6 @@ GLvoid Bump(int x)
 	}
 }
 
-//DWORD WINAPI client_key_thread(LPVOID arg)
-//{
-//
-//}
-
 DWORD WINAPI client_main_thread(LPVOID arg)
 {
 	SOCKET sock = (SOCKET)arg;
@@ -1573,6 +1557,20 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 		}
 		ResetEvent(hReadEvent);
 
+		// °ñÀÎ Ã¼Å© ¼ö½Å recv()
+		int goal_check = 0;
+		retval = recv(sock, (char*)&goal_check, sizeof(int), 0);
+		if (retval == SOCKET_ERROR) {
+			err_display("recv()");
+			return 0;
+		}
+
+		if (goal_check != 0) {
+			gameState = 2;
+			if (goal_check == 1) victory = true;
+			else victory = false;
+		}
+
 		// ÇÃ·¹ÀÌ¾î Á¤º¸ ¼ö½Å recv()
 		for (int i = 0; i < MAX_PLAYER; ++i) {
 			retval = recv(sock, (char*)&player_robot[i], sizeof(player_robot[i]), 0);
@@ -1592,7 +1590,7 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 			}
 		}
 
-		// ï¿½æµ¹ ï¿½ï¿½ï¿½ï¿½ ï¿½Þ±ï¿½ recv()
+		// Ãæµ¹ ¿©ºÎ ¼ö½Å recv()
 		bool bump{};
 		retval = recv(sock, (char*)&bump, sizeof(bool), 0);
 		if (retval == SOCKET_ERROR) {
@@ -1603,6 +1601,9 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 			glutTimerFunc(10, Bump, 1);
 
 		WaitForSingleObject(hReadEvent, INFINITE);
+	}
+	while(1){
+	
 	}
 
 	printf("[Thread] Å¬¶óÀÌ¾ðÆ® ½º·¹µå Á¾·á\n");

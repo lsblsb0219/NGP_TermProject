@@ -34,7 +34,7 @@ typedef struct player_packet {
 #pragma pack()
 player_packet player_robot[MAX_PLAYER], block_robot[BLOCK_NUM];
 
-HANDLE hKeyEvent, hGameStartEvent;
+HANDLE hGameStartEvent, hGoalEvent;
 HANDLE hWriteEvent[MAX_PLAYER], hReadEvent[MAX_PLAYER];
 bool bump[MAX_PLAYER];
 
@@ -45,6 +45,7 @@ void InitBuffer();
 BB get_bb(Robot robot);
 bool collision(BB obj_a, BB obj_b);
 
+BB goal{ 198.f,149.f,204.f,151.f };
 // 클라이언트 접속 수
 int client_sock_count = 0;
 
@@ -83,7 +84,26 @@ DWORD WINAPI main_thread(LPVOID arg)
 		}
 		SetEvent(hWriteEvent[client_id]);	// 플레이어 정보 확인
 
+		// 골인 지점에 로봇이 들어왔는지 체크
+		int goal_check = 0;
+		if (collision(goal, player_robot[client_id].bb)) {
+			player_robot[client_id].x = 0.0f, player_robot[client_id].z = 0.0f, player_robot[client_id].y = 0.0f, player_robot[client_id].y_radian = 0.0f,
+				player_robot[client_id].shake = 0.0f, player_robot[client_id].shake_dir = 1;
+			player_robot[client_id].move = false;
+			goal_check = 1;
+			SetEvent(hGoalEvent);
+		}
+		if (WaitForSingleObject(hGoalEvent, 0) == WAIT_OBJECT_0) {
+			if (!goal_check) goal_check = -1;
+		}
+		retval = send(sock, (char*)&goal_check, sizeof(int), 0);
+		if (retval == SOCKET_ERROR) {
+			err_display("send()");
+			break;
+		}
+
 		WaitForSingleObject(hReadEvent[client_id], INFINITE);
+
 		// send() 플레이어 정보 보내기 - Robot[3]
 		for (int i = 0; i < MAX_PLAYER; i++) {
 			retval = send(sock, (char*)&player_robot[i], sizeof(player_robot[i]), 0);
@@ -111,6 +131,9 @@ DWORD WINAPI main_thread(LPVOID arg)
 		}
 		bump[client_id] = false;
 	}
+	while (1) {
+		// 엔딩 창 구현
+	}
 
 	closesocket(sock);
 	printf("[Thread] 클라이언트 스레드 종료\n");
@@ -118,11 +141,6 @@ DWORD WINAPI main_thread(LPVOID arg)
 
 	return 0;
 }
-
-//DWORD WINAPI server_key_thread()
-//{
-//
-//}
 
 DWORD WINAPI update_thread(LPVOID)
 {
@@ -214,8 +232,8 @@ int main(int argc, char* argv[])
 	if (retval == SOCKET_ERROR) err_quit("listen()");
 
 	// CreateEvent()
-	hKeyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	hGameStartEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	hGoalEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 	// 데이터 통신에 사용할 변수
 	SOCKET client_sock;
@@ -280,8 +298,8 @@ int main(int argc, char* argv[])
 	}
 	
 	// 이벤트 핸들 닫기
-	CloseHandle(hKeyEvent);
 	CloseHandle(hGameStartEvent);
+	CloseHandle(hGoalEvent);
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		CloseHandle(hWriteEvent[i]);
 		CloseHandle(hReadEvent[i]);
@@ -295,10 +313,6 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void send_goal_packet()
-{
-
-}
 void sent_start_packet()
 {
 
