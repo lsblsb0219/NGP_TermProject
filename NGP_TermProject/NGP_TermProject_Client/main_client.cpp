@@ -284,6 +284,8 @@ int gameState = 0;		// 0: 타이틀, 1: 본게임, 2:엔딩
 int client_id = -1;		// 클라이언트 ID
 GLuint titleTexture;	// 타이틀 배경 BMP
 
+DWORD optval = 1; // Nagle 알고리즘 중지
+
 struct sockaddr_in serveraddr;
 SOCKET sock;
 
@@ -319,7 +321,7 @@ int main(int argc, char** argv)
 
 	glutKeyboardFunc(KeyBoard);
 	glutSpecialFunc(SpecialKeyBoard);
-	glutTimerFunc(10, TimerFunc, 1);
+	glutTimerFunc(100, TimerFunc, 1);
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(Reshape);
 
@@ -1491,7 +1493,7 @@ GLvoid TimerFunc(int x)
 		ResetEvent(hWriteEvent);
 		SetEvent(hReadEvent);
 	}
-	glutTimerFunc(10, TimerFunc, 1);
+	glutTimerFunc(100, TimerFunc, 1);
 	glutPostRedisplay();
 }
 GLvoid Bump(int index)
@@ -1625,6 +1627,9 @@ void match_loading()
 	int retval = connect(sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
 	if (retval == SOCKET_ERROR)
 		err_quit("connect()");
+	
+	// Nagle 중지
+	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char*)&optval, sizeof(optval));
 
 	// 쓰레드 생성
 	HANDLE hThread = CreateThread(NULL, 0, client_main_thread, (LPVOID)sock, 0, NULL);

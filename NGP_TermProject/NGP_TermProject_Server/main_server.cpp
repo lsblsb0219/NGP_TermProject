@@ -82,6 +82,7 @@ DWORD WINAPI main_thread(LPVOID arg)
 		}
 		SetEvent(hWriteEvent[client_id]);	// 플레이어 정보 확인
 
+
 		// send() 플레이어 정보 보내기 - Robot[3]
 		for (int i = 0; i < MAX_PLAYER; i++) {
 			retval = send(sock, (char*)&player_robot[i], sizeof(player_robot[i]), 0);
