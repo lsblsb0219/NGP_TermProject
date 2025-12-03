@@ -1418,8 +1418,8 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 		switch (key) {
 		case 13:
 			// key - enter
-			
-			match_loading();
+			if(!inputEnter)
+				match_loading();
 
 			break;
 		}
