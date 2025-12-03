@@ -38,7 +38,6 @@ HANDLE hGameStartEvent, hGoalEvent;
 HANDLE hWriteEvent[MAX_PLAYER], hReadEvent[MAX_PLAYER];
 bool bump[MAX_PLAYER];
 
-void send_goal_packet();
 void sent_start_packet();
 
 void InitBuffer();
@@ -46,6 +45,7 @@ BB get_bb(Robot robot);
 bool collision(BB obj_a, BB obj_b);
 
 BB goal{ 198.f,149.f,204.f,151.f };
+bool print_ending[3];
 // 클라이언트 접속 수
 int client_sock_count = 0;
 
@@ -82,7 +82,6 @@ DWORD WINAPI main_thread(LPVOID arg)
 			err_display("recv()");
 			break;
 		}
-		SetEvent(hWriteEvent[client_id]);	// 플레이어 정보 확인
 
 		// 골인 지점에 로봇이 들어왔는지 체크
 		int goal_check = 0;
@@ -102,7 +101,13 @@ DWORD WINAPI main_thread(LPVOID arg)
 			break;
 		}
 
+		SetEvent(hWriteEvent[client_id]);	// 플레이어 정보 확인
+
 		WaitForSingleObject(hReadEvent[client_id], INFINITE);
+
+		if (goal_check) {
+			break;
+		}
 
 		// send() 플레이어 정보 보내기 - Robot[3]
 		for (int i = 0; i < MAX_PLAYER; i++) {
