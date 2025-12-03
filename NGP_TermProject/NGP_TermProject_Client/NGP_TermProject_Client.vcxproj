@@ -135,9 +135,15 @@
   <ItemGroup>
     <Image Include="back.bmp" />
     <Image Include="bitmap1.bmp" />
+    <Image Include="bitmap3.bmp" />
     <Image Include="bottom.bmp" />
     <Image Include="front.bmp" />
     <Image Include="left.bmp" />
+    <Image Include="loading1.bmp" />
+    <Image Include="loading2.bmp" />
+    <Image Include="loading3.bmp" />
+    <Image Include="loading4.bmp" />
+    <Image Include="loading5.bmp" />
     <Image Include="N0.bmp" />
     <Image Include="N1.bmp" />
     <Image Include="N2.bmp" />

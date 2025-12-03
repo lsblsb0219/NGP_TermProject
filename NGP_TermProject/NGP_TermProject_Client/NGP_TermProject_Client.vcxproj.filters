@@ -74,6 +74,24 @@
     <Image Include="bitmap1.bmp">
       <Filter>리소스 파일</Filter>
     </Image>
+    <Image Include="bitmap3.bmp">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="loading1.bmp">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="loading2.bmp">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="loading3.bmp">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="loading4.bmp">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="loading5.bmp">
+      <Filter>리소스 파일</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <None Include="fragmentShader.glsl" />

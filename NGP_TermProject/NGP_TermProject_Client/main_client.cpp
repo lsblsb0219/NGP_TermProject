@@ -12,8 +12,8 @@
 
 #include "..\Common.h"
 
-// char* SERVERIP = (char*)"127.0.0.1";
-char* SERVERIP = (char*)"192.168.66.212";
+char* SERVERIP = (char*)"127.0.0.1";
+// char* SERVERIP = (char*)"192.168.66.212";
 #define SERVERPORT 9000
 #define BUFSIZE    512
 
@@ -277,7 +277,7 @@ GLchar* vertexSource, * fragmentSource;
 GLuint shaderID;
 GLuint vertexShader;
 GLuint fragmentShader;
-unsigned int texture_runmap[19];
+unsigned int texture_runmap[24];
 BITMAPINFO* bmp;
 
 int gameState = 0;		// 0: 타이틀, 1: 본게임, 2:엔딩
@@ -285,6 +285,9 @@ int client_id = -1;		// 클라이언트 ID
 GLuint titleTexture;	// 타이틀 배경 BMP
 
 DWORD optval = 1; // Nagle 알고리즘 중지
+
+bool inputEnter = false; // 엔터를 눌렀는가? (매칭중인가?)
+int loadingIndex = 0; // 0~4 로딩 이미지 5개
 
 struct sockaddr_in serveraddr;
 SOCKET sock;
@@ -433,7 +436,7 @@ void InitBuffer()
 }
 void InitTextures() 
 {
-	glGenTextures(19, texture_runmap);
+	glGenTextures(24, texture_runmap);
 	glUseProgram(shaderID);
 
 	//--- texture[0]
@@ -644,6 +647,61 @@ void InitTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	unsigned char* data19 = LoadDIBitmap("win.bmp", &bmp);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1000, 1000, 0, GL_BGR, GL_UNSIGNED_BYTE, data19);
+
+	// --- texture[19] - loading1
+	int tLocation20 = glGetUniformLocation(shaderID, "outTexture20");
+	glUniform1i(tLocation20, 19);
+	glBindTexture(GL_TEXTURE_2D, texture_runmap[19]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	unsigned char* data20 = LoadDIBitmap("loading1.bmp", &bmp);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, data20);
+
+	// --- texture[20] - loading2
+	int tLocation21 = glGetUniformLocation(shaderID, "outTexture21");
+	glUniform1i(tLocation21, 20);
+	glBindTexture(GL_TEXTURE_2D, texture_runmap[20]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	unsigned char* data21 = LoadDIBitmap("loading2.bmp", &bmp);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, data21);
+
+	// --- texture[21] - loading3
+	int tLocation22 = glGetUniformLocation(shaderID, "outTexture22");
+	glUniform1i(tLocation22, 21);
+	glBindTexture(GL_TEXTURE_2D, texture_runmap[21]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	unsigned char* data22 = LoadDIBitmap("loading3.bmp", &bmp);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, data22);
+
+	// --- texture[22] - loading4
+	int tLocation23 = glGetUniformLocation(shaderID, "outTexture23");
+	glUniform1i(tLocation23, 22);
+	glBindTexture(GL_TEXTURE_2D, texture_runmap[22]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	unsigned char* data23 = LoadDIBitmap("loading4.bmp", &bmp);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, data23);
+
+	// --- texture[23] - loading5
+	int tLocation24 = glGetUniformLocation(shaderID, "outTexture24");
+	glUniform1i(tLocation24, 23);
+	glBindTexture(GL_TEXTURE_2D, texture_runmap[23]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	unsigned char* data24 = LoadDIBitmap("loading5.bmp", &bmp);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, data24);
 }
 
 GLfloat camera_move[3]{ 0.0f, 2.0f, 2.5f }, camera_look[3]{ 0.0f, 0.5f, 0.0f }, light_pos[3]{ 0.0f, 2.0f, 2.0f }, camera_radian = 0.0f;
@@ -670,6 +728,9 @@ GLvoid drawScene()
 		GLint modelLoc = glGetUniformLocation(shaderID, "modelTransform");
 		GLint viewLoc = glGetUniformLocation(shaderID, "viewTransform");
 		GLint projLoc = glGetUniformLocation(shaderID, "projectionTransform");
+
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
@@ -678,6 +739,23 @@ GLvoid drawScene()
 		glBindTexture(GL_TEXTURE_2D, texture_runmap[16]);
 
 		glDrawArrays(GL_QUADS, 0, 4);
+
+		if (inputEnter) {
+			glDisable(GL_DEPTH_TEST);
+
+			glUniform1i(indexLoc, 3 + loadingIndex);
+
+			model = glm::scale(model, glm::vec3(0.1f, 0.1f, 1.0f));
+
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			
+			glActiveTexture(GL_TEXTURE0 + 19 + loadingIndex);
+			glBindTexture(GL_TEXTURE_2D, texture_runmap[19 + loadingIndex]);
+
+			glDrawArrays(GL_QUADS, 0, 4);
+
+			glEnable(GL_DEPTH_TEST);
+		}
 
 	}
 	//그냥 맵===================================================================================================================================================================================
@@ -1402,9 +1480,21 @@ GLvoid SpecialKeyBoard(int key, int x, int y)
 	glutPostRedisplay();
 }
 
+static int loadingTimer = 0;
+
 GLvoid TimerFunc(int x)
 {
-	if (gameState == 2) {	// 엔딩 창
+	if (gameState == 0) { // 매칭 중
+		if (inputEnter) {
+			loadingTimer += 10; // 10ms씩 누적
+
+			if (loadingTimer >= 100) { // 100ms마다
+				loadingIndex = (loadingIndex + 1) % 5; // 0 1 2 3 4 반복
+				loadingTimer = 0;
+			} 
+		}
+	}
+	else if (gameState == 2) {	// 엔딩 창
 		if (end_anime == 0) {
 			camera_radian += 1.0f;
 			if (camera_radian == 180.0f)
@@ -1557,6 +1647,7 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 	if (strcmp(buf, "GAME_START") == 0) {
 		printf("[클라이언트] GAME_START 신호 수신\n");
 		gameState = 1;
+		inputEnter = false; // 로딩 이미지 off
 	}
 
 	// 서버로 내 ID 다시 전송
@@ -1604,6 +1695,7 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 //
 //}
 //
+
 void match_loading()
 {
 	printf("서버에 접속 중...\n");
@@ -1637,6 +1729,8 @@ void match_loading()
 	else { closesocket(sock); }
 
 	printf("서버 접속 성공! GAME_START 대기...\n");
+
+	inputEnter = true;
 }
 
 void drawRobot(glm::mat4 axisTransForm, unsigned int modelLocation, Robot robot)
