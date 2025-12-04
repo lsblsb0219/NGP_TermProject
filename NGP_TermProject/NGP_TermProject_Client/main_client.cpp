@@ -37,7 +37,7 @@ struct Robot {
 #pragma pack()
 Robot player_robot[MAX_PLAYER], block_robot[19];
 
-int CountDown = 0;
+int CountDown = -1;
 bool victory = true;
 GLfloat start_location[MAX_PLAYER][3]{
 	-203.f, 0.f, 150.f,
@@ -55,8 +55,6 @@ GLvoid Bump(int index);
 
 //DWORD WINAPI client_key_thread(LPVOID arg);
 DWORD WINAPI client_main_thread(LPVOID arg);
-
-//int interaction_count();
 
 void match_loading();
 
@@ -289,6 +287,8 @@ DWORD optval = 1; // Nagle 알고리즘 중지
 
 bool inputEnter = false; // 엔터를 눌렀는가? (매칭중인가?)
 int loadingIndex = 0; // 0~4 로딩 이미지 5개
+bool isCountdown = false; // 카운트다운 상태인가?
+int countdownIndex = 0; // 3, 2, 1, go 4개
 
 struct sockaddr_in serveraddr;
 SOCKET sock;
@@ -506,7 +506,7 @@ void InitTextures()
 	unsigned char* data6 = LoadDIBitmap("right.bmp", &bmp);
 	glTexImage2D(GL_TEXTURE_2D, 0, 3, 1024, 1024, 0, GL_BGR, GL_UNSIGNED_BYTE, data6);
 
-	//--- texture[6] - 0
+	//--- texture[6] - GO
 	int tLocation7 = glGetUniformLocation(shaderID, "outTexture7");
 	glUniform1i(tLocation7, 6);
 	glBindTexture(GL_TEXTURE_2D, texture_runmap[6]);
@@ -514,7 +514,7 @@ void InitTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	unsigned char* data7 = LoadDIBitmap("N0.bmp", &bmp);
+	unsigned char* data7 = LoadDIBitmap("go.bmp", &bmp);
 	glTexImage2D(GL_TEXTURE_2D, 0, 3, 1024, 1024, 0, GL_BGR, GL_UNSIGNED_BYTE, data7);
 
 	//--- texture[7] - 1
@@ -1193,6 +1193,41 @@ GLvoid drawScene()
 				glDrawArrays(GL_QUADS, 0, 24); //정육면체
 			}
 		}
+		// 카운트다운 이미지
+		if (isCountdown) {
+			glDisable(GL_DEPTH_TEST);
+
+			// 화면 전체를 다시 Viewport로 설정
+			glViewport(0, 0, background_width, background_height);
+
+			// HUD용 투영/뷰 행렬 재설정 (2D 오버레이)
+			glm::mat4 proj = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+			glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(proj));
+
+			glm::mat4 view = glm::mat4(1.0f);
+			glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
+
+			// 이미지 크기/위치 세팅
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::translate(model2, glm::vec3(0.0f, 0.5f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(0.1f, 0.1f, 1.0f));    
+			glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model2));
+
+			// index 셋
+			GLuint indexLoc = glGetUniformLocation(shaderID, "index");
+			glUniform1i(indexLoc, 8 + (3 - countdownIndex));
+
+			// 텍스처 셋
+			glActiveTexture(GL_TEXTURE0 + 9 - countdownIndex);
+			glBindTexture(GL_TEXTURE_2D, texture_runmap[9 - countdownIndex]);
+
+			glDrawArrays(GL_QUADS, 0, 4);
+
+			glEnable(GL_DEPTH_TEST);
+
+			// viewport 다시 원상 복구 (다음 프레임을 위해)
+			glViewport(0, 0, background_width, background_height);
+		}
 	}
 	//엔딩 창===================================================================================================================================================================================
 	else if (gameState == 2) {
@@ -1488,12 +1523,53 @@ GLvoid TimerFunc(int x)
 		if (inputEnter) {
 			loadingTimer += 10; // 10ms씩 누적
 
-			if (loadingTimer >= 100) { // 100ms마다
+			if (loadingTimer >= 100) { // 100ms마다 (0.1초마다)
 				loadingIndex = (loadingIndex + 1) % 5; // 0 1 2 3 4 반복
 				loadingTimer = 0;
 			} 
 		}
 	}
+	else if (gameState == 1) { // 게임 중
+		if (isCountdown) {
+
+		}
+		else if (WaitForSingleObject(hWriteEvent, 0) == WAIT_OBJECT_0) {	// 게임 중
+			if (player_robot[client_id].move) {
+				if (collision(map_bb, player_robot[client_id].bb) || collision(map_bb2, player_robot[client_id].bb) || collision(map_bb3, player_robot[client_id].bb)) {	// 땅위에 있다면
+					player_robot[client_id].x += sin(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
+					player_robot[client_id].z += cos(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
+					player_robot[client_id].bb = get_bb(player_robot[client_id]);
+				}
+				else {	// 떨어짐
+					player_robot[client_id].y -= 0.1f;
+					player_robot[client_id].speed = 0.0f;
+					player_robot[client_id].move = false;
+				}
+				player_robot[client_id].shake += player_robot[client_id].shake_dir * 20 * player_robot[client_id].speed;
+				if (player_robot[client_id].shake <= -60.0f || player_robot[client_id].shake >= 60.0f)
+					player_robot[client_id].shake_dir *= -1;
+				if (player_robot[client_id].speed < 0.25f)
+					player_robot[client_id].speed += 0.001f;
+			}
+			if (player_robot[client_id].y < 0) {	// 떨어짐
+				player_robot[client_id].y -= player_robot[client_id].speed;
+				player_robot[client_id].speed += 0.01f;
+
+				if (player_robot[client_id].y < -5.f) {
+					player_robot[client_id].y_radian = 180.0f, player_robot[client_id].shake_dir = 0, player_robot[client_id].shake = false, player_robot[client_id].speed = 0.0f;
+					if (client_id == 0) {
+						player_robot[client_id].x = -203, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
+					}
+					else if (client_id == 1) {
+						player_robot[client_id].x = -201, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
+					}
+					else if (client_id == 2) {
+						player_robot[client_id].x = -199, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
+					}
+					player_robot[client_id].bb = get_bb(player_robot[client_id]);
+				}
+			}
+		}
 	else if (gameState == 2) {	// 엔딩 창
 		if (end_anime == 0) {
 			camera_radian += 1.0f;
@@ -1533,46 +1609,10 @@ GLvoid TimerFunc(int x)
 			block_robot[i].shake = 0.0f; block_robot[i].shake_dir = 1;
 		}
 	}
-	else if (WaitForSingleObject(hWriteEvent, 0) == WAIT_OBJECT_0){	// 게임 중
-		if (player_robot[client_id].move) {
-			if (collision(map_bb, player_robot[client_id].bb) || collision(map_bb2, player_robot[client_id].bb) || collision(map_bb3, player_robot[client_id].bb)) {	// 땅위에 있다면
-				player_robot[client_id].x += sin(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
-				player_robot[client_id].z += cos(glm::radians(player_robot[client_id].y_radian)) * player_robot[client_id].speed;
-				player_robot[client_id].bb = get_bb(player_robot[client_id]);
-			}
-			else {	// 떨어짐
-				player_robot[client_id].y -= 0.1f;
-				player_robot[client_id].speed = 0.0f;
-				player_robot[client_id].move = false;
-			}
-			player_robot[client_id].shake += player_robot[client_id].shake_dir * 20 * player_robot[client_id].speed;
-			if (player_robot[client_id].shake <= -60.0f || player_robot[client_id].shake >= 60.0f)
-				player_robot[client_id].shake_dir *= -1;
-			if (player_robot[client_id].speed < 0.25f)
-				player_robot[client_id].speed += 0.001f;
-		}
-		if (player_robot[client_id].y < 0) {	// 떨어짐
-			player_robot[client_id].y -= player_robot[client_id].speed;
-			player_robot[client_id].speed += 0.01f;
-
-			if (player_robot[client_id].y < -5.f) {
-				player_robot[client_id].y_radian = 180.0f, player_robot[client_id].shake_dir = 0, player_robot[client_id].shake = false, player_robot[client_id].speed = 0.0f;
-				if (client_id == 0) {
-					player_robot[client_id].x = -203, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
-				}
-				else if (client_id == 1) {
-					player_robot[client_id].x = -201, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
-				}
-				else if (client_id == 2) {
-					player_robot[client_id].x = -199, player_robot[client_id].z = 150, player_robot[client_id].y = 0.f;
-				}
-				player_robot[client_id].bb = get_bb(player_robot[client_id]);
-			}
-		}
 		ResetEvent(hWriteEvent);
 		SetEvent(hReadEvent);
 	}
-	glutTimerFunc(10, TimerFunc, 1);
+	glutTimerFunc(10, TimerFunc, 1); // 0.1초마다
 	glutPostRedisplay();
 }
 GLvoid Bump(int x)
@@ -1607,7 +1647,7 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 {
 	SOCKET sock = (SOCKET)arg;
 	int retval;
-	char buf[BUFSIZE];
+	char buf[11] = {};
 
 	// 서버에서 클라 ID 수신
 	retval = recv(sock, (char*)&client_id, sizeof(int), 0);
@@ -1632,12 +1672,30 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 		printf("[클라이언트] GAME_START 신호 수신\n");
 		gameState = 1;
 		inputEnter = false; // 로딩 이미지 off
+		
+		// 카운트다운 시작 대기 상태
+		isCountdown = true;
+		CountDown = 3;
+		countdownIndex = 0; // 3초 이미지부터 시작
 	}
 
 	// 서버로 내 ID 다시 전송
 	retval = send(sock, (char*)&client_id, sizeof(int), 0);
 	if(retval == SOCKET_ERROR)
 		err_display("send()");
+
+	while (isCountdown) {
+		if (CountDown <= -1) break;
+
+		// 카운드다운 받기
+		retval = recv(sock, (char*)&CountDown, sizeof(int), 0);
+		if (retval <= 0) break;
+
+		countdownIndex = 3 - CountDown;
+		isCountdown = (CountDown >= 0);
+
+		if (CountDown == 0) continue;
+	}
 
 	while (1/*게임 중*/) {
 		// 플레이어 정보 송신 send()
@@ -1691,7 +1749,9 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 		if (bump)
 			glutTimerFunc(10, Bump, 1);
 
-		WaitForSingleObject(hReadEvent, INFINITE);
+		if(!isCountdown) {
+			WaitForSingleObject(hReadEvent, INFINITE);
+		}
 	}
 	while(1){
 	
@@ -1701,12 +1761,6 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 
 	return 0;
 }
-
-//int interaction_count()
-//{
-//
-//}
-//
 
 void match_loading()
 {

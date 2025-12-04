@@ -58,10 +58,7 @@ void main(void)
 		texture (outTexture4, out_TexCoord) + 
 		texture (outTexture5, out_TexCoord) +
 		texture (outTexture6, out_TexCoord) +
-		texture (outTexture7, out_TexCoord) + 
-		texture (outTexture8, out_TexCoord) + 
-		texture (outTexture9, out_TexCoord) + 
-		texture (outTexture10, out_TexCoord) + 
+	
 		texture (outTexture11, out_TexCoord) + 
 		texture (outTexture12, out_TexCoord) + 
 		texture (outTexture13, out_TexCoord) + 
@@ -95,5 +92,21 @@ void main(void)
 	case 7:
 		FragColor = texture(outTexture24, vec2(1.0 - out_TexCoord.x, out_TexCoord.y));
 		break;
+
+	case 8: // COUNTDOWN "GO!"
+			FragColor = texture(outTexture7, vec2(1.0 - out_TexCoord.x, out_TexCoord.y));
+			break;
+	
+	case 9: // COUNTDOWN "1"
+			FragColor = texture(outTexture8, vec2(1.0 - out_TexCoord.x, out_TexCoord.y));
+			break;
+
+	case 10:  // COUNTDOWN "2"
+        FragColor = texture(outTexture9, vec2(1.0 - out_TexCoord.x, out_TexCoord.y));
+        break;
+
+	case 11:  // COUNTDOWN "3"
+        FragColor = texture(outTexture10, vec2(1.0 - out_TexCoord.x, out_TexCoord.y));
+        break;
 	}
 }

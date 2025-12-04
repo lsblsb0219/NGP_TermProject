@@ -35,7 +35,7 @@ typedef struct player_packet {
 player_packet player_robot[MAX_PLAYER], block_robot[BLOCK_NUM];
 
 HANDLE hGameStartEvent, hGoalEvent;
-HANDLE hWriteEvent[MAX_PLAYER], hReadEvent[MAX_PLAYER];
+HANDLE hWriteEvent[MAX_PLAYER], hReadEvent[MAX_PLAYER], hCountdownEvent[MAX_PLAYER];
 bool bump[MAX_PLAYER];
 
 void send_goal_packet();
@@ -46,8 +46,9 @@ BB get_bb(Robot robot);
 bool collision(BB obj_a, BB obj_b);
 
 BB goal{ 198.f,149.f,204.f,151.f };
-// 클라이언트 접속 수
-int client_sock_count = 0;
+
+int client_sock_count = 0;	// 클라이언트 접속 수
+int countdown; // 카운트다운 세기
 
 DWORD WINAPI main_thread(LPVOID arg)
 {
@@ -74,6 +75,17 @@ DWORD WINAPI main_thread(LPVOID arg)
 		err_display("send()");
 
 	printf("[Thread] 클라이언트 ID(client_%d) 수신 완료\n", client_id);
+
+	while (countdown >= 0) {
+		// send() 카운트다운 정보 보내기		
+		WaitForSingleObject(hCountdownEvent[client_id], INFINITE);
+		retval = send(sock, (char*)&countdown, sizeof(countdown), 0);
+		if (retval == SOCKET_ERROR) {
+			err_display("send() countdown");
+			break;
+		}
+		ResetEvent(hCountdownEvent[client_id]);
+	}
 
 	while (1/*게임 중일 때*/) {
 		// recv() 플레이어 정보 받기 - Robot
@@ -150,6 +162,19 @@ DWORD WINAPI update_thread(LPVOID)
 
 	// 게임 시작 대기
 	WaitForSingleObject(hGameStartEvent, INFINITE);
+
+	// 카운트다운 시작
+	countdown = 3;
+
+	// 3, 2, 1, 0, -1 까지 1초마다 감소시키기
+	while (countdown >= -1)
+	{
+		for (int i = 0; i < MAX_PLAYER; i++)
+			SetEvent(hCountdownEvent[i]);
+
+		Sleep(1000);   // 1초마다 값 감소
+		countdown--;
+	}
 
 	while (1/*게임 종료되지 않았다면*/) {
 		for (int i = 0; i < BLOCK_NUM; ++i) {
@@ -292,6 +317,7 @@ int main(int argc, char* argv[])
 			CloseHandle(hThread);
 		hWriteEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
 		hReadEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
+		hCountdownEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 		// client sock count 증가
 		client_sock_count++;
@@ -303,6 +329,7 @@ int main(int argc, char* argv[])
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		CloseHandle(hWriteEvent[i]);
 		CloseHandle(hReadEvent[i]);
+		CloseHandle(hCountdownEvent[i]);
 	}
 
 	// 소켓 닫기
