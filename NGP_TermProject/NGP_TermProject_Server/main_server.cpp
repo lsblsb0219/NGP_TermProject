@@ -344,11 +344,6 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void sent_start_packet()
-{
-
-}
-
 void InitBuffer()
 {
 	block_robot[0].road[0][0] = -203,	block_robot[0].road[0][1] = 140;
