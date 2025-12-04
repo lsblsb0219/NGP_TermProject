@@ -71,7 +71,19 @@ DWORD WINAPI main_thread(LPVOID arg)
 	retval = recv(sock, (char*)&client_id, sizeof(int), 0);
 	if (retval == SOCKET_ERROR)
 		err_display("send()");
-
+	
+	// recv() 플레이어 정보 받기 - Robot
+	retval = recv(sock, (char*)&player_robot[client_id], sizeof(player_robot[client_id]), 0);
+	if (retval == SOCKET_ERROR)
+		err_display("recv()");
+	SetEvent(hWriteEvent[client_id]);
+	WaitForMultipleObjects(MAX_PLAYER, hWriteEvent, TRUE, INFINITE);
+	// send() 플레이어 정보 보내기 - Robot[3]
+	for (int i = 0; i < MAX_PLAYER; i++) {
+		retval = send(sock, (char*)&player_robot[i], sizeof(player_robot[i]), 0);
+		if (retval == SOCKET_ERROR)
+			err_display("send()");
+	}
 	printf("[Thread] 클라이언트 ID(client_%d) 수신 완료\n", client_id);
 
 	while (countdown >= 0) {
@@ -84,6 +96,7 @@ DWORD WINAPI main_thread(LPVOID arg)
 		}
 		ResetEvent(hCountdownEvent[client_id]);
 	}
+	ResetEvent(hWriteEvent[client_id]);
 	while (goal_check[client_id] == 0) {
 		// recv() 플레이어 정보 받기 - Robot
 		retval = recv(sock, (char*)&player_robot[client_id], sizeof(player_robot[client_id]), 0);

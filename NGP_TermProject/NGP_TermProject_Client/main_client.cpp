@@ -1259,7 +1259,69 @@ GLvoid drawScene()
 		glUniform1i(indexLocation, 0);
 
 		/*여기에 로봇*/
-		drawRobot(axisTransForm, modelLocation, player_robot[client_id]);
+		{
+			unsigned int objColorLocation = glGetUniformLocation(shaderID, "objectColor"); //--- object Color값 전달
+
+			glm::mat4 shapeTransForm = glm::mat4(1.0f);//변환 행렬 생성 T
+			shapeTransForm = glm::translate(shapeTransForm, glm::vec3(player_robot[client_id].x, player_robot[client_id].y, player_robot[client_id].z));      //robot위치
+			shapeTransForm = glm::rotate(shapeTransForm, glm::radians(player_robot[client_id].y_radian), glm::vec3(0.0f, 1.0f, 0.0f));                 //보는 방향
+			shapeTransForm = glm::scale(shapeTransForm, glm::vec3(2.0f, 2.0f, 2.0f));                                                                      //size
+			/*오른다리*/ {
+				glUniform3f(objColorLocation, 0.0f, 0.6f, 0.6f);
+				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
+				model = glm::translate(model, glm::vec3(0.05f, 0.2f, 0.0f));                                                                //몸 위치에 따라 조정
+				model = glm::rotate(model, glm::radians(player_robot[client_id].shake), glm::vec3(1.0f, 0.0f, 0.0f));                                  //다리 흔들기
+				model = glm::translate(model, glm::vec3(0.0f, -0.1f, 0.0f));                                                                //원점조정
+				model = glm::scale(model, glm::vec3(0.05f, 0.1f, 0.05f));                                                                      //size
+				model = axisTransForm * shapeTransForm * model;
+				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+				glDrawArrays(GL_QUADS, 0, 24); //정육면체
+			} /*왼다리*/ {
+				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
+				model = glm::translate(model, glm::vec3(-0.05f, 0.2f, 0.0f));                                                               //몸 위치에 따라 조정
+				model = glm::rotate(model, glm::radians(player_robot[client_id].shake), glm::vec3(1.0f, 0.0f, 0.0f));                                 //다리 흔들기
+				model = glm::translate(model, glm::vec3(0.0f, -0.1f, 0.0f));                                                                //원점조정
+				model = glm::scale(model, glm::vec3(0.05f, 0.1f, 0.05f));                                                                      //size
+				model = axisTransForm * shapeTransForm * model;
+				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+				glDrawArrays(GL_QUADS, 0, 24); //정육면체
+			} /* 몸통 */ {
+				glUniform3f(objColorLocation, 0.6f, 0.0f, 0.6f);
+				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
+				model = glm::translate(model, glm::vec3(0.0f, 0.35f, 0.0f));
+				model = glm::scale(model, glm::vec3(0.1f, 0.15f, 0.05f));                                                                      //size
+				model = axisTransForm * shapeTransForm * model;
+				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+				glDrawArrays(GL_QUADS, 0, 24); //정육면체
+			} /*오른팔*/ {
+				glUniform3f(objColorLocation, 0.6f, 0.6f, 0.0f);
+				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
+				model = glm::translate(model, glm::vec3(0.125f, 0.5f, 0.0f));
+				model = glm::rotate(model, glm::radians(player_robot[client_id].shake), glm::vec3(1.0f, 0.0f, 0.0f));
+				model = glm::translate(model, glm::vec3(0.0f, -0.13f, 0.0f));
+				model = glm::scale(model, glm::vec3(0.025f, 0.13f, 0.05f));                                                                    //size
+				model = axisTransForm * shapeTransForm * model;
+				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+				glDrawArrays(GL_QUADS, 0, 24); //정육면체
+			} /*왼  팔*/ {
+				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
+				model = glm::translate(model, glm::vec3(-0.125f, 0.5f, 0.0f));
+				model = glm::rotate(model, glm::radians(player_robot[client_id].shake), glm::vec3(1.0f, 0.0f, 0.0f));
+				model = glm::translate(model, glm::vec3(0.0f, -0.13f, 0.0f));
+				model = glm::scale(model, glm::vec3(0.025f, 0.13f, 0.05f));                                                                    //size
+				model = axisTransForm * shapeTransForm * model;
+				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+				glDrawArrays(GL_QUADS, 0, 24); //정육면체
+			} /* 머리 */ {
+				glUniform3f(objColorLocation, 0.6f, 0.0f, 0.6f);
+				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
+				model = glm::translate(model, glm::vec3(0.0f, 0.55f, 0.0f));
+				model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));                                                                       //size
+				model = axisTransForm * shapeTransForm * model;
+				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+				glDrawArrays(GL_QUADS, 0, 24); //정육면체
+			}
+		}
 		/*이건 장애물 로봇*/
 		glUniform3f(objColorLocation, 1.0f, 1.0f, 1.0f);
 		for (int i = 0; i < BLOCK_NUM; ++i) {
@@ -1522,16 +1584,6 @@ GLvoid TimerFunc(int x)
 						block_robot[i].shake_dir *= -1;
 				}
 			}
-			else {
-				if (player_robot[client_id].shake_dir != 180.0f)
-					player_robot[client_id].shake_dir += 1.0f;
-				if (player_robot[client_id].z != 180.0f)
-					player_robot[client_id].z += 1.0f;
-				for (int i = 0; i < 19; ++i) {
-					if (block_robot[i].y_radian == (atan2(player_robot[client_id].x - player_robot[client_id].x, block_robot[client_id].x - block_robot[client_id].x) + 180.0f))
-						block_robot[i].y_radian += 0.1f;
-				}
-			}
 		}
 	}
 	glutTimerFunc(10, TimerFunc, 1); // 0.1초마다
@@ -1606,6 +1658,18 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 	if(retval == SOCKET_ERROR)
 		err_display("send()");
 
+	// 플레이어 정보 송신 send()
+	retval = send(sock, (char*)&player_robot[client_id], sizeof(player_robot[client_id]), 0);
+	if (retval == SOCKET_ERROR) 
+		err_display("send()");
+
+	// 플레이어 정보 수신 recv()
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		retval = recv(sock, (char*)&player_robot[i], sizeof(player_robot[i]), 0);
+		if (retval == SOCKET_ERROR) 
+			err_display("recv()");
+	}
+
 	while (isCountdown) {
 		if (CountDown <= -1) break;
 
@@ -1639,12 +1703,12 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 			gameState = 2;
 			if (goal_check == 1) victory = true;
 			else victory = false;
-
+			//플레이어 엔딩창에 배치
+			player_robot[client_id].x = 0.0f, player_robot[client_id].z = 0.0f, player_robot[client_id].y = 0.0f, player_robot[client_id].y_radian = 0.0f,
+				player_robot[client_id].shake = 0.0f, player_robot[client_id].shake_dir = 1;
+			player_robot[client_id].move = false;
 			// 장애물 엔딩창에 배치
 			for (int i = 0; i < BLOCK_NUM; ++i) {
-				player_robot[client_id].x = 0.0f, player_robot[client_id].z = 0.0f, player_robot[client_id].y = 0.0f, player_robot[client_id].y_radian = 0.0f,
-					player_robot[client_id].shake = 0.0f, player_robot[client_id].shake_dir = 1;
-				player_robot[client_id].move = false;
 				if (i < 2) {
 					block_robot[i].x = 1.0f * (i % 5) - 2.0f;
 					block_robot[i].z = -1.0f * (i / 5);
