@@ -53,7 +53,6 @@ GLvoid Reshape(int w, int h);
 GLvoid TimerFunc(int x);
 GLvoid Bump(int index);
 
-//DWORD WINAPI client_key_thread(LPVOID arg);
 DWORD WINAPI client_main_thread(LPVOID arg);
 
 void match_loading();
@@ -708,6 +707,7 @@ void InitTextures()
 GLfloat camera_move[3]{ 0.0f, 2.0f, 2.5f }, camera_look[3]{ 0.0f, 0.5f, 0.0f }, light_pos[3]{ 0.0f, 2.0f, 2.0f }, camera_radian = 0.0f;
 int end_anime;
 BB map_bb{ -204.0f,-153.f,-198.f,151.f }, map_bb2{ -204.f,-153.f,204.f,-147.f }, map_bb3{ 198.0f,-153.f,204.f,151.f };
+int goal_check = 0;
 
 GLvoid drawScene()
 {
@@ -1482,6 +1482,10 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 	else if (gameState == 2) {
 		switch (key)
 		{
+		case 13:
+			gameState = 0;
+			inputEnter = false;
+			break;
 		case 'q':
 			glutLeaveMainLoop();
 
@@ -1706,8 +1710,9 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 		}
 		ResetEvent(hReadEvent);
 
+		if (goal_check != 0) break;
+
 		// 골인 체크 수신 recv()
-		int goal_check = 0;
 		retval = recv(sock, (char*)&goal_check, sizeof(int), 0);
 		if (retval == SOCKET_ERROR) {
 			err_display("recv()");
@@ -1754,7 +1759,7 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 		}
 	}
 	while(1){
-	
+
 	}
 
 	printf("[Thread] 클라이언트 스레드 종료\n");
