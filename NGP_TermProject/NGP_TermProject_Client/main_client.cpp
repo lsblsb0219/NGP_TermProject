@@ -1462,7 +1462,7 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 	else if (gameState == 1) {
 		switch (key) {
 		case 'm':
-			if (CountDown == 0) {
+			if (CountDown <= -1) {
 				if (player_robot[client_id].move)
 					player_robot[client_id].move = false;
 				else
