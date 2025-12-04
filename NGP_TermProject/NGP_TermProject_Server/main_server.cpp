@@ -45,8 +45,6 @@ BB get_bb(Robot robot);
 bool collision(BB obj_a, BB obj_b);
 
 BB goal{ 198.f,149.f,204.f,151.f };
-// 클라이언트 접속 수
-int client_sock_count = 0;
 
 int client_sock_count = 0;	// 클라이언트 접속 수
 int countdown; // 카운트다운 세기
