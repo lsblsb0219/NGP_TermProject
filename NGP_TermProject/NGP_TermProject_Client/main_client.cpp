@@ -1682,6 +1682,7 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 
 		if (CountDown == 0) continue;
 	}
+
 	while (!goal_check) {
 		// 플레이어 정보 송신 send()
 		retval = send(sock, (char*)&player_robot[client_id], sizeof(player_robot[client_id]), 0);
@@ -1732,7 +1733,7 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 				return 0;
 			}
 		}
-		SetEvent(hWriteEvent);
+		
 		
 		// 장애물들 정보 수신 recv()
 		for (int i = 0; i < BLOCK_NUM; ++i) {
@@ -1743,6 +1744,7 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 				return 0;
 			}
 		}
+		SetEvent(hWriteEvent);
 
 		// 충돌 여부 수신 recv()
 		bool bump{};
@@ -1754,7 +1756,8 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 		}
 		if (bump)
 			glutTimerFunc(10, Bump, 1);
-
+		
+		Sleep(10);
 		WaitForSingleObject(hReadEvent, INFINITE);
 	}
 	

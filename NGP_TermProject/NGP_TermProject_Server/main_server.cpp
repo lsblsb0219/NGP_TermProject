@@ -34,7 +34,7 @@ typedef struct player_packet {
 #pragma pack()
 player_packet player_robot[MAX_PLAYER], block_robot[BLOCK_NUM];
 
-HANDLE hGameStartEvent, hGoalEvent[MAX_PLAYER];
+HANDLE hGameStartEvent;
 HANDLE hWriteEvent[MAX_PLAYER], hReadEvent[MAX_PLAYER], hCountdownEvent[MAX_PLAYER];
 bool bump[MAX_PLAYER];
 
@@ -112,21 +112,24 @@ DWORD WINAPI main_thread(LPVOID arg)
 				goal_check[i] = -1;
 			goal_check[client_id] = 1;
 		}
-		SetEvent(hGoalEvent[client_id]);
-		WaitForMultipleObjects(MAX_PLAYER, hGoalEvent, TRUE, INFINITE);
+		
 		if (goal_check[client_id] != 0)
 			printf("%d", goal_check[client_id]);
+
+
+		SetEvent(hWriteEvent[client_id]);	// 플레이어 정보 확인
+		WaitForSingleObject(hReadEvent[client_id], INFINITE);
+
 		retval = send(sock, (char*)&goal_check[client_id], sizeof(int), 0);
 		if (retval == SOCKET_ERROR) {
 			err_display("send()");
 			printf("골인 체크 수신\n");
 			break;
 		}
+
 		if (goal_check[client_id] != 0)
 			continue;
 
-		SetEvent(hWriteEvent[client_id]);	// 플레이어 정보 확인
-		WaitForSingleObject(hReadEvent[client_id], INFINITE);
 		// send() 플레이어 정보 보내기 - Robot[3]
 		for (int i = 0; i < MAX_PLAYER; i++) {
 			retval = send(sock, (char*)&player_robot[i], sizeof(player_robot[i]), 0);
@@ -205,7 +208,6 @@ DWORD WINAPI update_thread(LPVOID)
 		}
 		WaitForMultipleObjects(MAX_PLAYER, hWriteEvent, TRUE, INFINITE);
 		for (int id = 0; id < MAX_PLAYER; ++id) {
-			ResetEvent(hGoalEvent[id]);
 			for (int i = 0; i < MAX_PLAYER; ++i) {
 				if (i == id) continue;
 				if (player_robot[id].move && collision(player_robot[i].bb, player_robot[id].bb)) {	// 플레이어 간 충돌
@@ -244,7 +246,6 @@ DWORD WINAPI update_thread(LPVOID)
 		CloseHandle(hWriteEvent[i]);
 		CloseHandle(hReadEvent[i]);
 		CloseHandle(hCountdownEvent[i]);
-		CloseHandle(hGoalEvent[i]);
 	}
 
 	return 0;
@@ -339,7 +340,6 @@ int main(int argc, char* argv[])
 		hWriteEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
 		hReadEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
 		hCountdownEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
-		hGoalEvent[client_sock_count] = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 		// client sock count 증가
 		client_sock_count++;
