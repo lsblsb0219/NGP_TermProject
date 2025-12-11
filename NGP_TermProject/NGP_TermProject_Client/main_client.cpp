@@ -1265,28 +1265,26 @@ GLvoid drawScene()
 
 		/*여기에 로봇*/
 		{
-			unsigned int objColorLocation = glGetUniformLocation(shaderID, "objectColor"); //--- object Color값 전달
-
 			glm::mat4 shapeTransForm = glm::mat4(1.0f);//변환 행렬 생성 T
-			shapeTransForm = glm::translate(shapeTransForm, glm::vec3(player_robot[client_id].x, player_robot[client_id].y, player_robot[client_id].z));      //robot위치
-			shapeTransForm = glm::rotate(shapeTransForm, glm::radians(player_robot[client_id].y_radian), glm::vec3(0.0f, 1.0f, 0.0f));                 //보는 방향
-			shapeTransForm = glm::scale(shapeTransForm, glm::vec3(2.0f, 2.0f, 2.0f));                                                                      //size
+			shapeTransForm = glm::translate(shapeTransForm, glm::vec3(player_robot[client_id].x, player_robot[client_id].y, player_robot[client_id].z));						//robot위치
+			shapeTransForm = glm::rotate(shapeTransForm, glm::radians(player_robot[client_id].y_radian), glm::vec3(0.0f, 1.0f, 0.0f));					//보는 방향
+			shapeTransForm = glm::scale(shapeTransForm, glm::vec3(2.0f, 2.0f, 2.0f));														//size
 			/*오른다리*/ {
 				glUniform3f(objColorLocation, 0.0f, 0.6f, 0.6f);
 				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
-				model = glm::translate(model, glm::vec3(0.05f, 0.2f, 0.0f));                                                                //몸 위치에 따라 조정
-				model = glm::rotate(model, glm::radians(player_robot[client_id].shake), glm::vec3(1.0f, 0.0f, 0.0f));                                  //다리 흔들기
-				model = glm::translate(model, glm::vec3(0.0f, -0.1f, 0.0f));                                                                //원점조정
-				model = glm::scale(model, glm::vec3(0.05f, 0.1f, 0.05f));                                                                      //size
+				model = glm::translate(model, glm::vec3(0.05f, 0.2f, 0.0f));																//몸 위치에 따라 조정
+				model = glm::rotate(model, glm::radians(player_robot[client_id].shake), glm::vec3(0.0f, 0.0f, 1.0f));									//다리 흔들기
+				model = glm::translate(model, glm::vec3(0.0f, -0.1f, 0.0f));																//원점조정
+				model = glm::scale(model, glm::vec3(0.05f, 0.1f, 0.05f));																	//size
 				model = axisTransForm * shapeTransForm * model;
 				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 				glDrawArrays(GL_QUADS, 0, 24); //정육면체
 			} /*왼다리*/ {
 				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
-				model = glm::translate(model, glm::vec3(-0.05f, 0.2f, 0.0f));                                                               //몸 위치에 따라 조정
-				model = glm::rotate(model, glm::radians(player_robot[client_id].shake), glm::vec3(1.0f, 0.0f, 0.0f));                                 //다리 흔들기
-				model = glm::translate(model, glm::vec3(0.0f, -0.1f, 0.0f));                                                                //원점조정
-				model = glm::scale(model, glm::vec3(0.05f, 0.1f, 0.05f));                                                                      //size
+				model = glm::translate(model, glm::vec3(-0.05f, 0.2f, 0.0f));																//몸 위치에 따라 조정
+				model = glm::rotate(model, glm::radians(-player_robot[client_id].shake), glm::vec3(0.0f, 0.0f, 1.0f));									//다리 흔들기
+				model = glm::translate(model, glm::vec3(0.0f, -0.1f, 0.0f));																//원점조정
+				model = glm::scale(model, glm::vec3(0.05f, 0.1f, 0.05f));																	//size
 				model = axisTransForm * shapeTransForm * model;
 				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 				glDrawArrays(GL_QUADS, 0, 24); //정육면체
@@ -1294,7 +1292,7 @@ GLvoid drawScene()
 				glUniform3f(objColorLocation, 0.6f, 0.0f, 0.6f);
 				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
 				model = glm::translate(model, glm::vec3(0.0f, 0.35f, 0.0f));
-				model = glm::scale(model, glm::vec3(0.1f, 0.15f, 0.05f));                                                                      //size
+				model = glm::scale(model, glm::vec3(0.1f, 0.15f, 0.05f));																	//size
 				model = axisTransForm * shapeTransForm * model;
 				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 				glDrawArrays(GL_QUADS, 0, 24); //정육면체
@@ -1302,18 +1300,18 @@ GLvoid drawScene()
 				glUniform3f(objColorLocation, 0.6f, 0.6f, 0.0f);
 				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
 				model = glm::translate(model, glm::vec3(0.125f, 0.5f, 0.0f));
-				model = glm::rotate(model, glm::radians(player_robot[client_id].shake), glm::vec3(1.0f, 0.0f, 0.0f));
+				model = glm::rotate(model, glm::radians(-player_robot[client_id].shake * 3), glm::vec3(1.0f, 0.0f, 0.0f));
 				model = glm::translate(model, glm::vec3(0.0f, -0.13f, 0.0f));
-				model = glm::scale(model, glm::vec3(0.025f, 0.13f, 0.05f));                                                                    //size
+				model = glm::scale(model, glm::vec3(0.025f, 0.13f, 0.05f));																	//size
 				model = axisTransForm * shapeTransForm * model;
 				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 				glDrawArrays(GL_QUADS, 0, 24); //정육면체
 			} /*왼  팔*/ {
 				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
 				model = glm::translate(model, glm::vec3(-0.125f, 0.5f, 0.0f));
-				model = glm::rotate(model, glm::radians(player_robot[client_id].shake), glm::vec3(1.0f, 0.0f, 0.0f));
+				model = glm::rotate(model, glm::radians(-player_robot[client_id].shake * 3), glm::vec3(1.0f, 0.0f, 0.0f));
 				model = glm::translate(model, glm::vec3(0.0f, -0.13f, 0.0f));
-				model = glm::scale(model, glm::vec3(0.025f, 0.13f, 0.05f));                                                                    //size
+				model = glm::scale(model, glm::vec3(0.025f, 0.13f, 0.05f));																	//size
 				model = axisTransForm * shapeTransForm * model;
 				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 				glDrawArrays(GL_QUADS, 0, 24); //정육면체
@@ -1321,7 +1319,7 @@ GLvoid drawScene()
 				glUniform3f(objColorLocation, 0.6f, 0.0f, 0.6f);
 				glm::mat4 model = glm::mat4(1.0f);//변환 행렬 생성 T
 				model = glm::translate(model, glm::vec3(0.0f, 0.55f, 0.0f));
-				model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));                                                                       //size
+				model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));																	//size
 				model = axisTransForm * shapeTransForm * model;
 				glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 				glDrawArrays(GL_QUADS, 0, 24); //정육면체
@@ -1453,7 +1451,6 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 		switch (key) {
 		case 'm':
 			key_list.push(key);
-			printf("push: m");
 			break;
 		case't':
 			key_list.push(key);
@@ -1603,7 +1600,7 @@ GLvoid TimerFunc(int x)
 				player_robot[client_id].shake += player_robot[client_id].shake_dir * 1.0f;
 				if (player_robot[client_id].shake <= 0.0f || player_robot[client_id].shake >= 60.0f)
 					player_robot[client_id].shake_dir *= -1;
-				for (int i = 0; i < 19; ++i) {
+				for (int i = 0; i < BLOCK_NUM; ++i) {
 					block_robot[i].shake += block_robot[i].shake_dir * 5.0f * player_robot[client_id].speed;
 					if (block_robot[i].shake <= 0.0f || block_robot[i].shake >= 60.0f)
 						block_robot[i].shake_dir *= -1;
@@ -1744,8 +1741,8 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 		}
 
 		recv_time = int(time(NULL));
-		if ((recv_time - send_time) < 15);
-		Sleep(15);
+		if ((recv_time - send_time) < 15)
+			Sleep(15 - (recv_time - send_time));
 	}
 	
 	CloseHandle(hReadEvent);
@@ -1769,7 +1766,6 @@ DWORD WINAPI key_thread(LPVOID)
 
 		switch (key) {
 		case 'm':
-			printf("key: m");
 			if (CountDown <= -1) {
 				player_robot[client_id].move = !player_robot[client_id].move;
 				if (player_robot[client_id].shake_dir == 0)
@@ -1789,7 +1785,6 @@ DWORD WINAPI key_thread(LPVOID)
 			player_robot[client_id].y_radian -= 45.0f;
 			break;
 		default:
-			printf("key: default");
 			break;
 		}
 		SetEvent(hKeyEvent);
