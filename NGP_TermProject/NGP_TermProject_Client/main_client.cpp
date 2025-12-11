@@ -1453,6 +1453,7 @@ GLvoid KeyBoard(unsigned char key, int x, int y)
 		switch (key) {
 		case 'm':
 			key_list.push(key);
+			printf("push: m");
 			break;
 		case't':
 			key_list.push(key);
@@ -1514,7 +1515,7 @@ GLvoid TimerFunc(int x)
 		}
 	}
 	else if (gameState == 1) { // 게임 중
-		if (WaitForSingleObject(hReadEvent, 0) == WAIT_OBJECT_0) {	// 게임 중
+		if ((WaitForSingleObject(hReadEvent, 0) == WAIT_OBJECT_0) && (WaitForSingleObject(hKeyEvent, 0) == WAIT_OBJECT_0)) {	// 게임 중
 			ResetEvent(hWriteEvent);
 			if (player_robot[client_id].bump) {
 				if (collision(map_bb, player_robot[client_id].bb) || collision(map_bb2, player_robot[client_id].bb) || collision(map_bb3, player_robot[client_id].bb)) {
@@ -1743,8 +1744,8 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 		}
 
 		recv_time = int(time(NULL));
-		if ((recv_time - send_time) < 15)
-			Sleep(15 - (recv_time - send_time));
+		if ((recv_time - send_time) < 15);
+		Sleep(15);
 	}
 	
 	CloseHandle(hReadEvent);
@@ -1756,51 +1757,46 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 }
 DWORD WINAPI key_thread(LPVOID)
 {
+	printf("키 쓰레드 시작\n");
 	while (gameState <= 1) {
 		if (key_list.empty())
 			continue;
 
+		WaitForSingleObject(hReadEvent, INFINITE);
+		ResetEvent(hKeyEvent);
 		int key = key_list.front();
 		key_list.pop();
 
 		switch (key) {
 		case 'm':
-			WaitForSingleObject(hReadEvent, INFINITE);
-			ResetEvent(hKeyEvent);
+			printf("key: m");
 			if (CountDown <= -1) {
 				player_robot[client_id].move = !player_robot[client_id].move;
 				if (player_robot[client_id].shake_dir == 0)
 					player_robot[client_id].shake_dir = 1;
 			}
-			SetEvent(hKeyEvent);
 			break;
 		case't':
-			WaitForSingleObject(hReadEvent, INFINITE);
-			ResetEvent(hKeyEvent);
 			player_robot[client_id].x = -start_location[client_id][0];
 			player_robot[client_id].z = 140;
 			player_robot[client_id].y = 0.f;
 			player_robot[client_id].y_radian = 0.0f;
-			SetEvent(hKeyEvent);
 			break;
 		case GLUT_KEY_LEFT:
-			WaitForSingleObject(hReadEvent, INFINITE);
-			ResetEvent(hKeyEvent);
 			player_robot[client_id].y_radian += 45.0f;
-			SetEvent(hKeyEvent);
 			break;
 		case GLUT_KEY_RIGHT:
-			WaitForSingleObject(hReadEvent, INFINITE);
-			ResetEvent(hKeyEvent);
 			player_robot[client_id].y_radian -= 45.0f;
-			SetEvent(hKeyEvent);
 			break;
 		default:
+			printf("key: default");
 			break;
 		}
+		SetEvent(hKeyEvent);
 
 		glutPostRedisplay();
 	}
+	printf("키 쓰레드 끝\n");
 	return 0;
 }
 
