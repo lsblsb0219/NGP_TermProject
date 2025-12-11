@@ -6,7 +6,6 @@
 #include <ext.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <Windows.h>
-#include <ctime>
 
 #include "..\Common.h"
 
@@ -28,7 +27,7 @@ typedef struct player_packet {
 		y{};
 	BB bb{}; //왼쪽 상단, 오른쪽 하단
 	int shake_dir{}, dir{};
-	bool move = false; // 움직이고 있는지(대기 후 이동)
+	bool move = false, bump = false; // 움직이고 있는지(대기 후 이동)
 }Robot;
 
 #pragma pack()
@@ -36,7 +35,6 @@ player_packet player_robot[MAX_PLAYER], block_robot[BLOCK_NUM];
 
 HANDLE hGameStartEvent;
 HANDLE hWriteEvent[MAX_PLAYER], hReadEvent[MAX_PLAYER], hCountdownEvent[MAX_PLAYER];
-bool bump[MAX_PLAYER];
 
 void InitBuffer();
 BB get_bb(Robot robot);
@@ -112,21 +110,14 @@ DWORD WINAPI main_thread(LPVOID arg)
 				goal_check[i] = -1;
 			goal_check[client_id] = 1;
 		}
-		
-		if (goal_check[client_id] != 0)
-			printf("%d", goal_check[client_id]);
-
-
 		SetEvent(hWriteEvent[client_id]);	// 플레이어 정보 확인
 		WaitForSingleObject(hReadEvent[client_id], INFINITE);
-
 		retval = send(sock, (char*)&goal_check[client_id], sizeof(int), 0);
 		if (retval == SOCKET_ERROR) {
 			err_display("send()");
 			printf("골인 체크 수신\n");
 			break;
 		}
-
 		if (goal_check[client_id] != 0)
 			continue;
 
@@ -150,15 +141,6 @@ DWORD WINAPI main_thread(LPVOID arg)
 				break;
 			}
 		}
-
-		// send() 충돌 여부 보내기 - bump
-		retval = send(sock, (char*)&bump[client_id], sizeof(bool), 0);
-		if (retval == SOCKET_ERROR) {
-			err_display("send()");
-			printf("충돌 여부 보내기\n");
-			break;
-		}
-		bump[client_id] = false;
 	}
 	SetEvent(hWriteEvent[client_id]);	// 플레이어 정보 확인
 
@@ -186,8 +168,8 @@ DWORD WINAPI update_thread(LPVOID)
 	{
 		for (int i = 0; i < MAX_PLAYER; i++)
 			SetEvent(hCountdownEvent[i]);
-
-		Sleep(1000);   // 1초마다 값 감소
+		if (countdown > -1)
+			Sleep(1000);   // 1초마다 값 감소
 		countdown--;
 	}
 	while (client_sock_count != 0) {
@@ -218,7 +200,7 @@ DWORD WINAPI update_thread(LPVOID)
 					GLfloat radian = atan2(player_robot[id].x - player_robot[i].x, player_robot[id].z - player_robot[i].z);
 					player_robot[id].road[0][0] = player_robot[i].x, player_robot[id].road[0][1] = player_robot[i].z;
 					player_robot[id].road[1][0] = player_robot[i].x + 2.0f * sin(radian), player_robot[id].road[1][1] = player_robot[i].z + 2.0f * cos(radian);
-					bump[id] = true;
+					player_robot[id].bump = true;
 				}
 			}
 			for (int i = 0; i < BLOCK_NUM; ++i) {
@@ -230,7 +212,7 @@ DWORD WINAPI update_thread(LPVOID)
 					GLfloat radian = atan2(player_robot[id].x - block_robot[i].x, player_robot[id].z - block_robot[i].z);
 					player_robot[id].road[0][0] = block_robot[i].x, player_robot[id].road[0][1] = block_robot[i].z;
 					player_robot[id].road[1][0] = block_robot[i].x + 2.0f * sin(radian), player_robot[id].road[1][1] = block_robot[i].z + 2.0f * cos(radian);
-					bump[id] = true;
+					player_robot[id].bump = true;
 				}
 			}
 		}		
