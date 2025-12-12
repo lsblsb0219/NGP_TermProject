@@ -44,7 +44,7 @@ GLfloat start_location[MAX_PLAYER][3]{
 	-201.f, 0.f, 150.f,
 	-199.f, 0.f, 150.f, };
 
-HANDLE hReadEvent, hWriteEvent, hKeyEvent;
+HANDLE hReadEvent, hKeyEvent;
 std::queue<int> key_list;
 
 GLvoid drawScene();
@@ -320,7 +320,6 @@ int main(int argc, char** argv)
 	InitTextures();
 
 	hReadEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	hWriteEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	hKeyEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
 
 	HANDLE hThread = CreateThread(NULL, 0, key_thread, NULL, 0, NULL);
@@ -1513,7 +1512,7 @@ GLvoid TimerFunc(int x)
 	}
 	else if (gameState == 1) { // 게임 중
 		if ((WaitForSingleObject(hReadEvent, 0) == WAIT_OBJECT_0) && (WaitForSingleObject(hKeyEvent, 0) == WAIT_OBJECT_0)) {	// 게임 중
-			ResetEvent(hWriteEvent);
+			
 			if (player_robot[client_id].bump) {
 				if (collision(map_bb, player_robot[client_id].bb) || collision(map_bb2, player_robot[client_id].bb) || collision(map_bb3, player_robot[client_id].bb)) {
 					GLfloat radian = atan2(player_robot[client_id].road[1][0] - player_robot[client_id].road[0][0], player_robot[client_id].road[1][1] - player_robot[client_id].road[0][1]);
@@ -1576,7 +1575,7 @@ GLvoid TimerFunc(int x)
 					}
 				}
 			}
-			SetEvent(hWriteEvent);
+			
 		}
 	}
 	else if (gameState == 2) {	// 엔딩 창
@@ -1746,7 +1745,7 @@ DWORD WINAPI client_main_thread(LPVOID arg)
 	}
 	
 	CloseHandle(hReadEvent);
-	CloseHandle(hWriteEvent);
+	CloseHandle(hKeyEvent);
 
 	printf("[Thread] 클라이언트 스레드 종료\n");
 
