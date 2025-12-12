@@ -282,7 +282,7 @@ int gameState = 0;		// 0: 타이틀, 1: 본게임, 2:엔딩
 int client_id = -1;		// 클라이언트 ID
 GLuint titleTexture;	// 타이틀 배경 BMP
 
-//DWORD optval = 1; // Nagle 알고리즘 중지
+DWORD optval = 1; // Nagle 알고리즘 중지
 
 bool inputEnter = false; // 엔터를 눌렀는가? (매칭중인가?)
 int loadingIndex = 0; // 0~4 로딩 이미지 5개
@@ -1820,7 +1820,7 @@ void match_loading()
 		err_quit("connect()");
 	
 	// Nagle 중지
-	//setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char*)&optval, sizeof(optval));
+	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char*)&optval, sizeof(optval));
 
 	// 쓰레드 생성
 	HANDLE hThread = CreateThread(NULL, 0, client_main_thread, (LPVOID)sock, 0, NULL);
