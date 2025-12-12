@@ -236,7 +236,7 @@ DWORD WINAPI update_thread(LPVOID)
 int main(int argc, char* argv[])
 {
 	int retval;
-	DWORD optval = 1; // Nagle 중지
+	// DWORD optval = 1; // Nagle 중지
 
 	// 윈속 초기화
 	WSADATA wsa;
@@ -301,7 +301,7 @@ int main(int argc, char* argv[])
 		}
 
 		// Nagle 중지
-		setsockopt(client_sock, IPPROTO_TCP, TCP_NODELAY, (char*)&optval, sizeof(optval));
+		// setsockopt(client_sock, IPPROTO_TCP, TCP_NODELAY, (char*)&optval, sizeof(optval));
 
 		// 접속한 클라이언트 정보 출력
 		char addr[INET_ADDRSTRLEN];
